@@ -11529,6 +11529,182 @@ const MEDICAL_ADVICE = {
   '高尿酸血症': { department: '内分泌科/风湿免疫科', recommendedTests: ['血尿酸', '肾功能', '24小时尿尿酸', '泌尿系超声', '血糖血脂'], urgency: 'routine' }
 };
 
+// ========== 症状-疾病关键词映射 ==========
+const SYMPTOM_DISEASE_MAP = {
+  '高血压': ['头晕', '头痛', '血压高', '血压', '头昏', '眩晕', '心悸', '耳鸣'],
+  '糖尿病': ['多饮', '多尿', '多食', '血糖', '口渴', '消瘦', '尿频'],
+  '胃炎': ['胃痛', '胃胀', '反酸', '烧心', '胃不适', '恶心', '胃酸'],
+  '失眠': ['睡不着', '失眠', '入睡困难', '早醒', '睡眠差', '多梦', '睡眠'],
+  '颈椎病': ['颈痛', '脖子痛', '肩颈', '手麻', '脖子硬', '颈椎'],
+  '腰椎间盘突出': ['腰痛', '腿麻', '腰酸', '坐骨神经', '腰椎', '腰腿'],
+  '偏头痛': ['偏头痛', '搏动性头痛', '一侧头痛'],
+  '焦虑症': ['焦虑', '紧张', '担心', '坐立不安', '心慌', '恐慌'],
+  '抑郁症': ['抑郁', '情绪低落', '兴趣减退', '乏力', '消极', '绝望'],
+  '痛风': ['关节痛', '脚趾痛', '红肿热痛', '尿酸', '痛风'],
+  '冠心病': ['胸痛', '胸闷', '心绞痛', '心前区', '胸闷气短'],
+  '哮喘': ['喘息', '气短', '呼吸困难', '哮鸣'],
+  '过敏性鼻炎': ['打喷嚏', '流鼻涕', '鼻塞', '鼻痒', '鼻子痒'],
+  '贫血': ['面色苍白', '心悸', '气短', '贫血'],
+  '甲状腺功能亢进': ['心慌', '手抖', '消瘦', '怕热', '多汗', '突眼', '甲亢'],
+  '甲状腺功能减退': ['乏力', '怕冷', '浮肿', '便秘', '体重增加', '甲减'],
+  '湿疹': ['皮肤痒', '皮疹', '湿疹', '皮肤红', '瘙痒'],
+  '脂肪肝': ['肝区不适', '脂肪肝', '转氨酶', '右上腹'],
+  '慢性肾病': ['泡沫尿', '水肿', '尿少', '腰酸', '肾功能'],
+  '骨质疏松': ['骨痛', '腰背痛', '身高变矮', '骨折', '骨密度'],
+  '类风湿关节炎': ['关节肿痛', '晨僵', '关节变形', '类风湿'],
+  '肺炎': ['发热', '咳嗽', '咳痰', '胸痛', '气促'],
+  '支气管炎': ['咳嗽', '咳痰', '气喘', '慢性咳嗽'],
+  '胆囊炎': ['右上腹痛', '发热', '恶心', '黄疸', '胆囊'],
+  '消化性溃疡': ['胃痛', '腹痛', '反酸', '黑便', '呕血'],
+  '痛经': ['痛经', '月经痛', '经期腹痛'],
+  '月经失调': ['月经不调', '月经紊乱', '经期不规律'],
+  '前列腺增生': ['尿频', '尿急', '排尿困难', '夜尿多'],
+  '干眼症': ['眼干', '眼涩', '异物感', '视疲劳'],
+  '帕金森病': ['手抖', '动作慢', '僵硬', '步态异常', '震颤']
+};
+
+// ========== 疾病风险分析辅助函数 ==========
+function analyzeFeedbackForRisks(text, tag) {
+  var matchedDiseases = [];
+  var combinedText = text;
+  // "不舒服"标签本身也触发风险分析
+  if (tag === '不舒服' && !combinedText) {
+    return matchedDiseases; // 无文本则无法匹配，依赖后续逻辑
+  }
+  Object.keys(SYMPTOM_DISEASE_MAP).forEach(function(disease) {
+    var keywords = SYMPTOM_DISEASE_MAP[disease];
+    var hitCount = 0;
+    keywords.forEach(function(kw) {
+      if (combinedText.indexOf(kw) !== -1) hitCount++;
+    });
+    if (hitCount > 0) {
+      matchedDiseases.push({ disease: disease, hitCount: hitCount, keywords: keywords });
+    }
+  });
+  // 按匹配关键词数量降序排列
+  matchedDiseases.sort(function(a, b) { return b.hitCount - a.hitCount; });
+  return matchedDiseases;
+}
+
+function getDiseaseUrgency(disease) {
+  // 优先从 MEDICAL_ADVICE 获取紧急程度
+  if (MEDICAL_ADVICE[disease]) return MEDICAL_ADVICE[disease].urgency || 'routine';
+  // 从 DISEASE_DB 获取
+  if (DISEASE_DB[disease]) return DISEASE_DB[disease].urgency || 'routine';
+  return 'routine';
+}
+
+function getUrgencyLabel(urgency) {
+  var map = { 'emergency': '🚨 紧急就医', 'acute': '⚠️ 尽快就诊', 'urgent': '⏰ 需及时就诊', 'routine': '📅 门诊随访' };
+  return map[urgency] || '门诊随访';
+}
+
+function getUrgencyColorClass(urgency) {
+  var map = { 'emergency': 'bg-red-100 text-red-600', 'acute': 'bg-orange-100 text-orange-600', 'urgent': 'bg-yellow-100 text-yellow-600', 'routine': 'bg-blue-100 text-blue-600' };
+  return map[urgency] || 'bg-blue-100 text-blue-600';
+}
+
+function getUrgencyBorderColor(urgency) {
+  var map = { 'emergency': 'border-red-300', 'acute': 'border-orange-300', 'urgent': 'border-yellow-300', 'routine': 'border-blue-200' };
+  return map[urgency] || 'border-blue-200';
+}
+
+function getRiskLevel(count, urgency) {
+  if (urgency === 'emergency') return 'critical';
+  if (urgency === 'acute') return 'high';
+  if (count >= 3) return 'high';
+  if (count >= 2) return 'medium';
+  return 'low';
+}
+
+function getRiskLevelLabel(level) {
+  var map = { 'critical': '极高危', 'high': '高风险', 'medium': '中风险', 'low': '低风险' };
+  return map[level] || '低风险';
+}
+
+function getRiskLevelColor(level) {
+  var map = { 'critical': 'bg-red-500 text-white', 'high': 'bg-orange-500 text-white', 'medium': 'bg-yellow-500 text-white', 'low': 'bg-green-500 text-white' };
+  return map[level] || 'bg-green-500 text-white';
+}
+
+function updateDiseaseRisk(disease, source) {
+  var diseaseRisks = lsGet('disease_risks') || {};
+  var now = Date.now();
+  if (!diseaseRisks[disease]) {
+    diseaseRisks[disease] = { firstIdentified: now, count: 1, source: source, lastUpdate: now };
+  } else {
+    diseaseRisks[disease].count++;
+    diseaseRisks[disease].lastUpdate = now;
+    if (source === 'test') diseaseRisks[disease].source = 'test'; // 测试确认的权重更高
+  }
+  var urgency = getDiseaseUrgency(disease);
+  diseaseRisks[disease].level = getRiskLevel(diseaseRisks[disease].count, urgency);
+  diseaseRisks[disease].urgency = urgency;
+  lsSet('disease_risks', diseaseRisks);
+  return diseaseRisks[disease];
+}
+
+function autoAddDiseaseLearningCards(disease) {
+  if (!DISEASE_DB[disease] || !DISEASE_DB[disease].cards) return 0;
+  var myPlan = lsGet('my_plan') || [];
+  var cards = DISEASE_DB[disease].cards;
+  var addedCount = 0;
+  Object.keys(cards).forEach(function(key) {
+    var card = cards[key];
+    var planId = disease + '_' + key;
+    if (!myPlan.find(function(p) { return p.id === planId; })) {
+      myPlan.push({ id: planId, disease: disease, cardKey: key, title: disease + ' - ' + card.title, addedAt: Date.now(), completed: false });
+      addedCount++;
+    }
+  });
+  if (addedCount > 0) lsSet('my_plan', myPlan);
+  return addedCount;
+}
+
+function buildRiskCardHTML(disease, risk) {
+  var urgency = risk.urgency || getDiseaseUrgency(disease);
+  var level = risk.level || getRiskLevel(risk.count, urgency);
+  var advice = MEDICAL_ADVICE[disease] || {};
+  var isEmergency = (urgency === 'emergency' || urgency === 'acute');
+
+  var html = '<div class="bg-white rounded-xl p-4 border-2 ' + getUrgencyBorderColor(urgency) + ' mb-3">';
+  html += '<div class="flex items-center justify-between mb-2">';
+  html += '<div class="flex items-center gap-2">';
+  html += '<span class="text-sm font-bold text-gray-800">' + disease + '</span>';
+  html += '<span class="text-xs px-2 py-0.5 rounded-full ' + getUrgencyColorClass(urgency) + '">' + getUrgencyLabel(urgency) + '</span>';
+  html += '<span class="text-xs px-2 py-0.5 rounded-full ' + getRiskLevelColor(level) + '">' + getRiskLevelLabel(level) + '</span>';
+  html += '</div></div>';
+
+  if (advice.department) {
+    html += '<p class="text-xs text-gray-600 mb-1"><span class="font-medium">推荐科室：</span>' + advice.department + '</p>';
+  }
+  if (advice.recommendedTests && advice.recommendedTests.length > 0) {
+    html += '<p class="text-xs text-gray-600 mb-2"><span class="font-medium">建议检查：</span>' + advice.recommendedTests.join('、') + '</p>';
+  }
+
+  if (isEmergency) {
+    html += '<div class="bg-red-50 rounded-lg p-3 mb-3 border border-red-200">';
+    html += '<p class="text-sm text-red-700 font-bold">🚨 请尽快前往医院就诊！</p>';
+    html += '<p class="text-xs text-red-600 mt-1">该疾病可能需要紧急医疗处理，请勿拖延。</p>';
+    html += '</div>';
+  }
+
+  html += '<button onclick="goToTestForDisease(\'' + disease + '\')" class="w-full text-center text-xs bg-primary text-white py-2 rounded-lg hover:bg-primary-dark transition-colors">去测试确认</button>';
+  html += '</div>';
+  return html;
+}
+
+function goToTestForDisease(disease) {
+  closeModal('modal-feedback');
+  // 确保疾病在 diseases 列表中
+  var diseases = lsGet('diseases') || [];
+  if (!diseases.includes(disease) && DISEASE_DB[disease]) {
+    diseases.push(disease);
+    lsSet('diseases', diseases);
+  }
+  openTest();
+}
+
 // ========== 工具函数 ==========
 function lsGet(key) { try { return JSON.parse(localStorage.getItem(STORAGE_PREFIX + key)); } catch { return null; } }
 function lsSet(key, val) { localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify(val)); }
@@ -11613,16 +11789,63 @@ function simulateUpload() { const names = ['体检报告.pdf', '血常规.jpg', 
 function renderFileList() { document.getElementById('file-list').innerHTML = uploadedFiles.map((f, i) => `<div class="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2 mb-1"><span class="text-sm text-gray-600 truncate">📎 ${f}</span><button onclick="removeFile(${i})" class="text-red-400 text-xs ml-2">删除</button></div>`).join(''); }
 function removeFile(idx) { uploadedFiles.splice(idx, 1); renderFileList(); }
 function submitFeedback() {
-  const text = document.getElementById('feedback-text').value.trim();
+  var text = document.getElementById('feedback-text').value.trim();
   if (!currentQuickTag && !text) { showToast('请至少选择一个快捷标签或输入内容'); return; }
-  const feedback = { id: Date.now(), tag: currentQuickTag || '未选择', text: text, files: [...uploadedFiles], timestamp: Date.now() };
-  const feedbacks = lsGet('feedbacks') || []; feedbacks.push(feedback); lsSet('feedbacks', feedbacks);
-  const responses = { '很好': '很高兴你今天状态不错！保持好心情，健康与你同行。', '一般': '记录下来了。注意休息，适当运动，保持规律作息。', '不舒服': '已记录你的不适。建议密切关注，如持续不适请及时就医。' };
-  const resp = responses[currentQuickTag] || '感谢你的反馈，已记录到健康档案。';
-  const respEl = document.getElementById('feedback-response'); respEl.textContent = resp; respEl.classList.remove('hidden');
+  var feedback = { id: Date.now(), tag: currentQuickTag || '未选择', text: text, files: uploadedFiles.slice(), timestamp: Date.now() };
+  var feedbacks = lsGet('feedbacks') || []; feedbacks.push(feedback); lsSet('feedbacks', feedbacks);
+
+  // === 疾病风险分析 ===
+  var matchedRisks = analyzeFeedbackForRisks(text, currentQuickTag);
+  var respEl = document.getElementById('feedback-response');
+  respEl.classList.remove('hidden');
+
+  if (matchedRisks.length > 0) {
+    // 有匹配的疾病风险
+    var riskHtml = '<div class="space-y-2">';
+    // 检查是否有紧急疾病
+    var hasEmergency = false;
+    matchedRisks.forEach(function(item) {
+      var risk = updateDiseaseRisk(item.disease, 'feedback');
+      var urgency = risk.urgency || getDiseaseUrgency(item.disease);
+      if (urgency === 'emergency' || urgency === 'acute') hasEmergency = true;
+      riskHtml += buildRiskCardHTML(item.disease, risk);
+      // 自动将疾病添加到学习计划
+      autoAddDiseaseLearningCards(item.disease);
+      // 如果疾病在 DISEASE_DB 中但不在 diseases 列表中，自动添加
+      if (DISEASE_DB[item.disease]) {
+        var diseases = lsGet('diseases') || [];
+        if (!diseases.includes(item.disease)) {
+          diseases.push(item.disease);
+          lsSet('diseases', diseases);
+        }
+      }
+    });
+
+    if (hasEmergency) {
+      riskHtml += '<div class="bg-red-50 rounded-xl p-4 border-2 border-red-300 mt-3">';
+      riskHtml += '<p class="text-sm text-red-700 font-bold text-center">🚨 检测到紧急健康风险，请尽快就医！</p>';
+      riskHtml += '</div>';
+    }
+
+    riskHtml += '</div>';
+    respEl.innerHTML = riskHtml;
+    respEl.className = 'mt-4 p-4 bg-orange-50 rounded-xl text-sm text-gray-700';
+  } else if (currentQuickTag === '不舒服') {
+    // 不舒服但未匹配到具体疾病
+    var responses = { '很好': '很高兴你今天状态不错！保持好心情，健康与你同行。', '一般': '记录下来了。注意休息，适当运动，保持规律作息。', '不舒服': '已记录你的不适。建议密切关注，如持续不适请及时就医。' };
+    var resp = responses[currentQuickTag] || '感谢你的反馈，已记录到健康档案。';
+    respEl.textContent = resp;
+    respEl.className = 'mt-4 p-4 bg-primary-light rounded-xl text-sm text-gray-700';
+  } else {
+    var responses2 = { '很好': '很高兴你今天状态不错！保持好心情，健康与你同行。', '一般': '记录下来了。注意休息，适当运动，保持规律作息。' };
+    var resp2 = responses2[currentQuickTag] || '感谢你的反馈，已记录到健康档案。';
+    respEl.textContent = resp2;
+    respEl.className = 'mt-4 p-4 bg-primary-light rounded-xl text-sm text-gray-700';
+  }
+
   updateHealthScore(); renderFeedbackHistory();
   currentQuickTag = ''; uploadedFiles = []; document.getElementById('feedback-text').value = ''; document.getElementById('file-list').innerHTML = '';
-  document.querySelectorAll('#modal-feedback .tag').forEach(t => { t.classList.remove('ring-2', 'ring-offset-1'); });
+  document.querySelectorAll('#modal-feedback .tag').forEach(function(t) { t.classList.remove('ring-2', 'ring-offset-1'); });
   showToast('反馈已保存');
 }
 function renderFeedbackHistory() {
@@ -11642,136 +11865,216 @@ let selfTestResults = {};
 function openTest() { testStep = 1; selfTestResults = {}; updateTestStep(); renderRiskTests(); openModal('modal-test'); }
 function updateTestStep() { for (let i = 1; i <= 2; i++) { document.getElementById(`test-step-${i}`).classList.toggle('hidden', i !== testStep); const dot = document.getElementById(`test-step-dot-${i}`); dot.classList.remove('active', 'done'); if (i === testStep) dot.classList.add('active'); else if (i < testStep) dot.classList.add('done'); } }
 function renderRiskTests() {
-  const diseases = lsGet('diseases') || [];
-  const container = document.getElementById('risk-test-list');
-  const noRiskTip = document.getElementById('no-risk-tip');
-  let tests = [];
-  diseases.forEach(d => { if (SELF_TESTS[d]) { SELF_TESTS[d].forEach(t => { if (!tests.find(x => x.id === t.id)) tests.push({ ...t, relatedDisease: d }); }); } });
+  var diseases = lsGet('diseases') || [];
+  var diseaseRisks = lsGet('disease_risks') || {};
+  var container = document.getElementById('risk-test-list');
+  var noRiskTip = document.getElementById('no-risk-tip');
+  var tests = [];
+
+  // 优先加载 disease_risks 中的风险疾病的对应测试
+  var riskDiseaseNames = Object.keys(diseaseRisks).sort(function(a, b) {
+    var levelOrder = { 'critical': 0, 'high': 1, 'medium': 2, 'low': 3 };
+    var la = levelOrder[diseaseRisks[a].level] || 3;
+    var lb = levelOrder[diseaseRisks[b].level] || 3;
+    return la - lb;
+  });
+
+  riskDiseaseNames.forEach(function(d) {
+    if (SELF_TESTS[d]) {
+      SELF_TESTS[d].forEach(function(t) {
+        if (!tests.find(function(x) { return x.id === t.id; })) {
+          tests.push(Object.assign({}, t, { relatedDisease: d, isRisk: true, riskLevel: diseaseRisks[d].level || 'low' }));
+        }
+      });
+    }
+  });
+
+  // 然后加载 diseases 列表中不在 risks 中的疾病测试
+  diseases.forEach(function(d) {
+    if (!diseaseRisks[d] && SELF_TESTS[d]) {
+      SELF_TESTS[d].forEach(function(t) {
+        if (!tests.find(function(x) { return x.id === t.id; })) {
+          tests.push(Object.assign({}, t, { relatedDisease: d, isRisk: false }));
+        }
+      });
+    }
+  });
+
   if (tests.length === 0) { tests = SELF_TESTS['通用']; }
   if (tests.length === 0) { container.innerHTML = ''; noRiskTip.classList.remove('hidden'); return; }
   noRiskTip.classList.add('hidden');
-  container.innerHTML = tests.map((t, idx) => `
-    <div class="bg-gray-50 rounded-xl p-4">
-      <div class="flex items-start gap-3 mb-2">
-        <span class="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">${idx+1}</span>
-        <div class="flex-1">
-          <h4 class="font-semibold text-gray-700 text-sm">${t.name}</h4>
-          <p class="text-xs text-gray-400 mt-0.5">${t.desc}${t.relatedDisease ? ` · 相关：${t.relatedDisease}` : ''}</p>
-        </div>
-      </div>
-      <div class="ml-9 mb-3 p-3 bg-white rounded-lg border border-gray-100">
-        <p class="text-xs text-gray-600 mb-1"><span class="font-medium text-gray-700">检测方法：</span>${t.method}</p>
-        ${t.normalStandard ? `<p class="text-xs mb-1"><span class="font-medium text-green-700">正常标准：</span><span class="text-green-600">${t.normalStandard}</span></p>` : ''}
-        ${t.abnormalNote ? `<p class="text-xs"><span class="font-medium text-red-600">异常提示：</span><span class="text-red-500">${t.abnormalNote}</span></p>` : ''}
-      </div>
-      <div class="flex gap-2 ml-9">
-        <button onclick="selectSelfTest('${t.id}','正常',this)" class="choice-btn flex-1 text-xs py-2" data-group="self_${t.id}" data-value="正常">✅ 正常</button>
-        <button onclick="selectSelfTest('${t.id}','异常',this)" class="choice-btn flex-1 text-xs py-2" data-group="self_${t.id}" data-value="异常">⚠️ 异常</button>
-        <button onclick="selectSelfTest('${t.id}','不确定',this)" class="choice-btn flex-1 text-xs py-2" data-group="self_${t.id}" data-value="不确定">❓ 不确定</button>
-      </div>
-    </div>
-  `).join('');
+  container.innerHTML = tests.map(function(t, idx) {
+    var riskBadge = '';
+    if (t.isRisk && t.riskLevel) {
+      riskBadge = '<span class="text-xs px-2 py-0.5 rounded-full ' + getRiskLevelColor(t.riskLevel) + ' ml-1">' + getRiskLevelLabel(t.riskLevel) + '</span>';
+    }
+    return '<div class="bg-gray-50 rounded-xl p-4' + (t.isRisk ? ' border-l-4 border-l-orange-400' : '') + '">' +
+      '<div class="flex items-start gap-3 mb-2">' +
+        '<span class="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">' + (idx+1) + '</span>' +
+        '<div class="flex-1">' +
+          '<div class="flex items-center"><h4 class="font-semibold text-gray-700 text-sm">' + t.name + '</h4>' + riskBadge + '</div>' +
+          '<p class="text-xs text-gray-400 mt-0.5">' + t.desc + (t.relatedDisease ? ' · 相关：' + t.relatedDisease : '') + '</p>' +
+        '</div>' +
+      '</div>' +
+      '<div class="ml-9 mb-3 p-3 bg-white rounded-lg border border-gray-100">' +
+        '<p class="text-xs text-gray-600 mb-1"><span class="font-medium text-gray-700">检测方法：</span>' + t.method + '</p>' +
+        (t.normalStandard ? '<p class="text-xs mb-1"><span class="font-medium text-green-700">正常标准：</span><span class="text-green-600">' + t.normalStandard + '</span></p>' : '') +
+        (t.abnormalNote ? '<p class="text-xs"><span class="font-medium text-red-600">异常提示：</span><span class="text-red-500">' + t.abnormalNote + '</span></p>' : '') +
+      '</div>' +
+      '<div class="flex gap-2 ml-9">' +
+        '<button onclick="selectSelfTest(\'' + t.id + '\',\'正常\',this)" class="choice-btn flex-1 text-xs py-2" data-group="self_' + t.id + '" data-value="正常">✅ 正常</button>' +
+        '<button onclick="selectSelfTest(\'' + t.id + '\',\'异常\',this)" class="choice-btn flex-1 text-xs py-2" data-group="self_' + t.id + '" data-value="异常">⚠️ 异常</button>' +
+        '<button onclick="selectSelfTest(\'' + t.id + '\',\'不确定\',this)" class="choice-btn flex-1 text-xs py-2" data-group="self_' + t.id + '" data-value="不确定">❓ 不确定</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
 }
 function selectSelfTest(id, value, el) { selfTestResults[id] = value; el.parentElement.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected')); el.classList.add('selected'); }
 function testNextStep(step) { if (step === 2 && testStep === 1) { const diseases = lsGet('diseases') || []; let tests = []; diseases.forEach(d => { if (SELF_TESTS[d]) tests = tests.concat(SELF_TESTS[d]); }); if (tests.length === 0) tests = SELF_TESTS['通用']; const allDone = tests.every(t => selfTestResults[t.id]); if (!allDone && tests.length > 0) { showToast('请完成所有自测项目'); return; } renderTestResult(); } testStep = step; updateTestStep(); }
 function renderTestResult() {
-  const container = document.getElementById('test-result');
-  const diseases = lsGet('diseases') || [];
-  let tests = [];
-  diseases.forEach(d => { if (SELF_TESTS[d]) tests = tests.concat(SELF_TESTS[d].map(t => ({ ...t, relatedDisease: d }))); });
-  if (tests.length === 0) tests = SELF_TESTS['通用'].map(t => ({ ...t, relatedDisease: '通用' }));
-  const abnormalCount = Object.values(selfTestResults).filter(v => v === '异常').length;
-  container.innerHTML = tests.map(t => {
-    const val = selfTestResults[t.id] || '未测';
-    const colors = { '正常': 'text-green-600 bg-green-50', '异常': 'text-red-500 bg-red-50', '不确定': 'text-yellow-600 bg-yellow-50', '未测': 'text-gray-400 bg-gray-50' };
-    return `<div class="flex items-center justify-between py-2 border-b border-gray-50"><span class="text-sm text-gray-600">${t.name}</span><span class="text-xs px-3 py-1 rounded-full ${colors[val]}">${val}</span></div>`;
+  var container = document.getElementById('test-result');
+  var diseases = lsGet('diseases') || [];
+  var diseaseRisks = lsGet('disease_risks') || {};
+  var tests = [];
+  diseases.forEach(function(d) { if (SELF_TESTS[d]) tests = tests.concat(SELF_TESTS[d].map(function(t) { return Object.assign({}, t, { relatedDisease: d }); })); });
+  if (tests.length === 0) tests = SELF_TESTS['通用'].map(function(t) { return Object.assign({}, t, { relatedDisease: '通用' }); });
+  var abnormalCount = Object.values(selfTestResults).filter(function(v) { return v === '异常'; }).length;
+  var normalCount = Object.values(selfTestResults).filter(function(v) { return v === '正常'; }).length;
+
+  // 构建结果列表，包含风险等级变化提示
+  container.innerHTML = tests.map(function(t) {
+    var val = selfTestResults[t.id] || '未测';
+    var colors = { '正常': 'text-green-600 bg-green-50', '异常': 'text-red-500 bg-red-50', '不确定': 'text-yellow-600 bg-yellow-50', '未测': 'text-gray-400 bg-gray-50' };
+    var riskChange = '';
+    if (val === '异常' && t.relatedDisease && t.relatedDisease !== '通用') {
+      riskChange = '<span class="text-xs text-red-500 ml-2">风险升级</span>';
+    } else if (val === '正常' && t.relatedDisease && t.relatedDisease !== '通用' && diseaseRisks[t.relatedDisease]) {
+      riskChange = '<span class="text-xs text-green-600 ml-2">风险降低</span>';
+    }
+    return '<div class="flex items-center justify-between py-2 border-b border-gray-50"><span class="text-sm text-gray-600">' + t.name + '</span><div class="flex items-center"><span class="text-xs px-3 py-1 rounded-full ' + colors[val] + '">' + val + '</span>' + riskChange + '</div></div>';
   }).join('');
-  const summaryBox = document.getElementById('test-summary-box');
-  if (abnormalCount === 0) { 
-    summaryBox.className = 'p-4 rounded-xl mb-4 bg-green-50'; 
-    summaryBox.innerHTML = '<p class="text-sm text-green-700 font-semibold">✅ 所有项目正常，继续保持！</p>'; 
-  } else { 
-    // 获取异常项目对应的疾病就医建议
-    const abnormalDiseases = new Set();
-    tests.forEach(t => {
-      if (selfTestResults[t.id] === '异常' && t.relatedDisease && t.relatedDisease !== '通用') {
-        abnormalDiseases.add(t.relatedDisease);
+
+  // 收集异常和正常的疾病
+  var abnormalDiseases = new Set();
+  var normalDiseases = new Set();
+  tests.forEach(function(t) {
+    if (t.relatedDisease && t.relatedDisease !== '通用') {
+      if (selfTestResults[t.id] === '异常') abnormalDiseases.add(t.relatedDisease);
+      else if (selfTestResults[t.id] === '正常') normalDiseases.add(t.relatedDisease);
+    }
+  });
+
+  var summaryBox = document.getElementById('test-summary-box');
+
+  if (abnormalCount === 0 && normalCount > 0) {
+    // 所有项目正常
+    var loweredRisks = [];
+    normalDiseases.forEach(function(d) { if (diseaseRisks[d]) loweredRisks.push(d); });
+    var normalMsg = '✅ 所有项目正常，继续保持！';
+    if (loweredRisks.length > 0) {
+      normalMsg += '<p class="text-xs text-green-600 mt-1">以下疾病风险已降低：' + loweredRisks.join('、') + '</p>';
+    }
+    summaryBox.className = 'p-4 rounded-xl mb-4 bg-green-50';
+    summaryBox.innerHTML = '<p class="text-sm text-green-700 font-semibold">' + normalMsg + '</p>';
+  } else if (abnormalCount > 0) {
+    // 有异常项目
+    var medicalAdviceHtml = '<div class="mt-4 space-y-3">';
+    var hasEmergencyDisease = false;
+
+    abnormalDiseases.forEach(function(disease) {
+      var advice = MEDICAL_ADVICE[disease];
+      if (advice) {
+        if (advice.urgency === 'emergency' || advice.urgency === 'acute') hasEmergencyDisease = true;
+        medicalAdviceHtml += '<div class="bg-white rounded-lg p-3 border border-red-100">' +
+          '<div class="flex items-center gap-2 mb-2">' +
+            '<span class="text-sm font-semibold text-gray-800">' + disease + '</span>' +
+            '<span class="text-xs px-2 py-0.5 rounded-full ' + getUrgencyColorClass(advice.urgency) + '">' + getUrgencyLabel(advice.urgency) + '</span>' +
+            (diseaseRisks[disease] ? '<span class="text-xs px-2 py-0.5 rounded-full ' + getRiskLevelColor(diseaseRisks[disease].level || 'high') + '">风险已确认</span>' : '') +
+          '</div>' +
+          '<p class="text-xs text-gray-600 mb-1"><span class="font-medium">推荐科室：</span>' + advice.department + '</p>' +
+          '<p class="text-xs text-gray-600"><span class="font-medium">建议检查：</span>' + advice.recommendedTests.join('、') + '</p>' +
+        '</div>';
       }
     });
-    
-    let medicalAdviceHtml = '';
-    if (abnormalDiseases.size > 0 && typeof MEDICAL_ADVICE !== 'undefined') {
-      medicalAdviceHtml = '<div class="mt-4 space-y-3">';
-      abnormalDiseases.forEach(disease => {
-        const advice = MEDICAL_ADVICE[disease];
-        if (advice) {
-          const urgencyText = { 'emergency': '🚨 急诊', 'acute': '⚠️ 尽快就诊', 'urgent': '⏰ 需及时就诊', 'routine': '📅 门诊随访' };
-          medicalAdviceHtml += `
-            <div class="bg-white rounded-lg p-3 border border-red-100">
-              <div class="flex items-center gap-2 mb-2">
-                <span class="text-sm font-semibold text-gray-800">${disease}</span>
-                <span class="text-xs px-2 py-0.5 rounded-full ${advice.urgency === 'emergency' ? 'bg-red-100 text-red-600' : advice.urgency === 'acute' ? 'bg-orange-100 text-orange-600' : advice.urgency === 'urgent' ? 'bg-yellow-100 text-yellow-600' : 'bg-blue-100 text-blue-600'}">${urgencyText[advice.urgency] || '门诊随访'}</span>
-              </div>
-              <p class="text-xs text-gray-600 mb-1"><span class="font-medium">推荐科室：</span>${advice.department}</p>
-              <p class="text-xs text-gray-600"><span class="font-medium">建议检查：</span>${advice.recommendedTests.join('、')}</p>
-            </div>`;
-        }
-      });
-      medicalAdviceHtml += '</div>';
+    medicalAdviceHtml += '</div>';
+
+    var emergencyWarning = '';
+    if (hasEmergencyDisease) {
+      emergencyWarning = '<div class="bg-red-100 rounded-lg p-3 mb-3 border-2 border-red-300">' +
+        '<p class="text-sm text-red-700 font-bold">🚨 发现紧急异常，请立即就医！</p>' +
+        '<p class="text-xs text-red-600 mt-1">您的自测结果显示可能存在需要紧急处理的健康问题，请立即前往医院就诊。</p>' +
+      '</div>';
     }
-    
-    summaryBox.className = 'p-4 rounded-xl mb-4 bg-red-50'; 
-    summaryBox.innerHTML = `
-      <p class="text-sm text-red-700 font-semibold mb-2">⚠️ 发现${abnormalCount}项异常，建议就医检查！</p>
-      <p class="text-xs text-red-600">请根据以下建议及时就医：</p>
-      ${medicalAdviceHtml}
-    `; 
+
+    summaryBox.className = 'p-4 rounded-xl mb-4 bg-red-50';
+    summaryBox.innerHTML = emergencyWarning +
+      '<p class="text-sm text-red-700 font-semibold mb-2">⚠️ 发现' + abnormalCount + '项异常，建议就医检查！</p>' +
+      '<p class="text-xs text-red-600">请根据以下建议及时就医：</p>' +
+      medicalAdviceHtml;
   }
 }
 function saveTestResult() {
-  const diseases = lsGet('diseases') || [];
-  let tests = [];
-  diseases.forEach(d => { if (SELF_TESTS[d]) tests = tests.concat(SELF_TESTS[d].map(t => ({ ...t, relatedDisease: d }))); });
-  if (tests.length === 0) tests = SELF_TESTS['通用'].map(t => ({ ...t, relatedDisease: '通用' }));
-  
-  const result = { 
-    results: tests.map(t => ({ id: t.id, name: t.name, value: selfTestResults[t.id] || '未测', relatedDisease: t.relatedDisease })), 
-    timestamp: Date.now() 
+  var diseases = lsGet('diseases') || [];
+  var tests = [];
+  diseases.forEach(function(d) { if (SELF_TESTS[d]) tests = tests.concat(SELF_TESTS[d].map(function(t) { return Object.assign({}, t, { relatedDisease: d }); })); });
+  if (tests.length === 0) tests = SELF_TESTS['通用'].map(function(t) { return Object.assign({}, t, { relatedDisease: '通用' }); });
+
+  var result = {
+    results: tests.map(function(t) { return { id: t.id, name: t.name, value: selfTestResults[t.id] || '未测', relatedDisease: t.relatedDisease }; }),
+    timestamp: Date.now()
   };
   lsSet('test_result', result);
-  
-  // 记录异常项目对应的疾病风险
-  const abnormalDiseases = new Set();
-  tests.forEach(t => {
-    if (selfTestResults[t.id] === '异常' && t.relatedDisease && t.relatedDisease !== '通用') {
-      abnormalDiseases.add(t.relatedDisease);
+
+  // 收集异常和正常的疾病
+  var abnormalDiseases = new Set();
+  var normalDiseases = new Set();
+  tests.forEach(function(t) {
+    if (t.relatedDisease && t.relatedDisease !== '通用') {
+      if (selfTestResults[t.id] === '异常') abnormalDiseases.add(t.relatedDisease);
+      else if (selfTestResults[t.id] === '正常') normalDiseases.add(t.relatedDisease);
     }
   });
-  
+
+  var diseaseRisks = lsGet('disease_risks') || {};
+
+  // 异常项目 → 升级风险等级
   if (abnormalDiseases.size > 0) {
-    const diseaseRisks = lsGet('disease_risks') || {};
-    abnormalDiseases.forEach(disease => {
-      if (!diseaseRisks[disease]) {
-        diseaseRisks[disease] = { firstIdentified: Date.now(), count: 1, source: 'test' };
-      } else {
-        diseaseRisks[disease].count++;
-        diseaseRisks[disease].lastTest = Date.now();
+    abnormalDiseases.forEach(function(disease) {
+      var risk = updateDiseaseRisk(disease, 'test');
+      // 自动添加对应疾病的学习卡片到提分计划
+      var addedCount = autoAddDiseaseLearningCards(disease);
+      if (addedCount > 0) {
+        showToast(disease + '：已添加' + addedCount + '个学习卡片到提分计划');
       }
     });
-    lsSet('disease_risks', diseaseRisks);
-    
+
     // 自动添加到疾病史
-    const currentDiseases = lsGet('diseases') || [];
-    abnormalDiseases.forEach(disease => {
+    var currentDiseases = lsGet('diseases') || [];
+    abnormalDiseases.forEach(function(disease) {
       if (!currentDiseases.includes(disease)) {
         currentDiseases.push(disease);
       }
     });
     lsSet('diseases', currentDiseases);
   }
-  
+
+  // 正常项目 → 降低风险等级
+  normalDiseases.forEach(function(disease) {
+    if (diseaseRisks[disease]) {
+      diseaseRisks[disease].count = Math.max(0, (diseaseRisks[disease].count || 1) - 1);
+      diseaseRisks[disease].lastUpdate = Date.now();
+      var urgency = getDiseaseUrgency(disease);
+      diseaseRisks[disease].level = getRiskLevel(diseaseRisks[disease].count, urgency);
+      // 如果计数降到0，移除风险记录
+      if (diseaseRisks[disease].count <= 0) {
+        delete diseaseRisks[disease];
+      }
+      lsSet('disease_risks', diseaseRisks);
+    }
+  });
+
   updateHealthScore();
-  renderDiseaseAccordion(); // 更新学习页面
+  renderDiseaseAccordion();
   showToast('自测结果已保存，已更新疾病风险记录');
   closeModal('modal-test');
 }
@@ -11876,53 +12179,94 @@ function switchImproveTab(tab) {
   if (tab === 'plan') renderMyPlan();
 }
 
-// ========== 学习：只根据个人疾病推荐 ==========
+// ========== 学习：优先显示风险疾病，然后显示个人疾病 ==========
 function renderDiseaseAccordion() {
-  const diseases = lsGet('diseases') || [];
-  const container = document.getElementById('disease-accordion');
-  const noDiseaseTip = document.getElementById('no-disease-tip');
-  
-  // 只显示用户已有的疾病
-  const userDiseases = diseases.filter(d => DISEASE_DB[d]);
-  
-  if (userDiseases.length === 0) {
+  var diseases = lsGet('diseases') || [];
+  var diseaseRisks = lsGet('disease_risks') || {};
+  var container = document.getElementById('disease-accordion');
+  var noDiseaseTip = document.getElementById('no-disease-tip');
+
+  // 分为风险疾病和非风险疾病两组
+  var riskDiseases = [];
+  var normalDiseases = [];
+
+  diseases.forEach(function(d) {
+    if (!DISEASE_DB[d]) return;
+    if (diseaseRisks[d]) {
+      riskDiseases.push({ name: d, risk: diseaseRisks[d] });
+    } else {
+      normalDiseases.push(d);
+    }
+  });
+
+  // 风险疾病按风险等级排序
+  var levelOrder = { 'critical': 0, 'high': 1, 'medium': 2, 'low': 3 };
+  riskDiseases.sort(function(a, b) {
+    return (levelOrder[a.risk.level] || 3) - (levelOrder[b.risk.level] || 3);
+  });
+
+  var allDiseases = riskDiseases.map(function(r) { return r.name; }).concat(normalDiseases);
+
+  if (allDiseases.length === 0) {
     container.innerHTML = '';
     noDiseaseTip.classList.remove('hidden');
     return;
   }
   noDiseaseTip.classList.add('hidden');
-  
-  container.innerHTML = userDiseases.map(name => {
-    const data = DISEASE_DB[name];
-    return `<div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-      <button onclick="toggleAccordion(this)" class="w-full flex items-center gap-3 p-4 text-left">
-        <span class="text-2xl">${data.icon}</span>
-        <span class="font-semibold text-gray-800 text-sm flex-1">${name}</span>
-        <svg class="w-4 h-4 text-gray-400 transition-transform accordion-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-      <div class="accordion-body">
-        <div class="px-4 pb-4 space-y-3">
-          ${data.department ? `<div class="flex items-center gap-2 mb-2"><span class="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-full">🏥 推荐科室：${data.department}</span>${data.recommendedTests ? `<span class="text-xs bg-purple-50 text-purple-600 px-2 py-1 rounded-full">📋 建议检查：${data.recommendedTests.slice(0,3).join('、')}${data.recommendedTests.length > 3 ? '...' : ''}</span>` : ''}</div>` : ''}
-          <div class="sub-card"><h4 class="text-xs font-semibold text-gray-500 mb-1">发病原因</h4><p class="text-xs text-gray-600 leading-relaxed">${data.cause}</p></div>
-          <div class="sub-card"><h4 class="text-xs font-semibold text-gray-500 mb-1">发病机理</h4><p class="text-xs text-gray-600 leading-relaxed">${data.mechanism}</p></div>
-          <div class="sub-card"><h4 class="text-xs font-semibold text-gray-500 mb-1">诊断标准</h4><p class="text-xs text-gray-600 leading-relaxed">${data.diagnosis}</p></div>
-          <div class="sub-card"><h4 class="text-xs font-semibold text-gray-500 mb-1">西医治疗</h4><p class="text-xs text-gray-600 leading-relaxed">${data.treatment}</p></div>
-          <div class="sub-card"><h4 class="text-xs font-semibold text-gray-500 mb-1">中医证型分类</h4><p class="text-xs text-gray-600 leading-relaxed">${data.tcm}</p></div>
-          <div class="border-t border-gray-100 pt-3">
-            <h4 class="text-xs font-semibold text-gray-500 mb-2">生活建议</h4>
-            ${Object.entries(data.cards).map(([key, card]) => `
-              <div class="sub-card">
-                <div class="flex items-center justify-between mb-2">
-                  <div class="flex items-center gap-2"><span>${card.icon}</span><span class="text-sm font-semibold text-gray-700">${card.title}</span></div>
-                  <button onclick="addToPlan('${name}','${key}','${card.title}')" class="text-xs bg-primary text-white px-3 py-1 rounded-full hover:bg-primary-dark transition-colors">+ 加入计划</button>
-                </div>
-                ${key === 'diet' ? `<div class="mb-2"><span class="text-xs text-green-600 font-semibold">宜吃：</span><div class="flex flex-wrap gap-1 mt-1">${card.recommend.map(r => `<span class="text-xs bg-green-50 text-green-600 px-2 py-0.5 rounded">${r}</span>`).join('')}</div></div><div><span class="text-xs text-red-500 font-semibold">忌吃：</span><div class="flex flex-wrap gap-1 mt-1">${card.avoid.map(a => `<span class="text-xs bg-red-50 text-red-500 px-2 py-0.5 rounded">${a}</span>`).join('')}</div></div>` : `<p class="text-xs text-gray-600 leading-relaxed">${card.content}</p>`}
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      </div>
-    </div>`;
+
+  container.innerHTML = allDiseases.map(function(name) {
+    var data = DISEASE_DB[name];
+    var risk = diseaseRisks[name];
+    var isRisk = !!risk;
+    var urgency = isRisk ? (risk.urgency || getDiseaseUrgency(name)) : (data.urgency || 'routine');
+    var level = isRisk ? (risk.level || 'low') : null;
+
+    var riskBadgeHtml = '';
+    if (isRisk) {
+      riskBadgeHtml = '<span class="text-xs px-2 py-0.5 rounded-full ' + getRiskLevelColor(level) + '">' + getRiskLevelLabel(level) + '</span>';
+      riskBadgeHtml += '<span class="text-xs px-2 py-0.5 rounded-full ' + getUrgencyColorClass(urgency) + '">' + getUrgencyLabel(urgency) + '</span>';
+    }
+
+    var borderClass = isRisk ? 'border-2 ' + getUrgencyBorderColor(urgency) : 'border border-gray-100';
+
+    return '<div class="bg-white rounded-2xl ' + borderClass + ' overflow-hidden">' +
+      '<button onclick="toggleAccordion(this)" class="w-full flex items-center gap-3 p-4 text-left">' +
+        '<span class="text-2xl">' + data.icon + '</span>' +
+        '<span class="font-semibold text-gray-800 text-sm flex-1">' + name + '</span>' +
+        (isRisk ? riskBadgeHtml : '') +
+        '<svg class="w-4 h-4 text-gray-400 transition-transform accordion-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>' +
+      '</button>' +
+      '<div class="accordion-body">' +
+        '<div class="px-4 pb-4 space-y-3">' +
+          (isRisk ? '<div class="bg-orange-50 rounded-lg p-2 text-xs text-orange-700 font-medium">⚠️ 该疾病已被识别为健康风险，建议重点关注</div>' : '') +
+          (data.department ? '<div class="flex items-center gap-2 mb-2"><span class="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-full">推荐科室：' + data.department + '</span>' + (data.recommendedTests ? '<span class="text-xs bg-purple-50 text-purple-600 px-2 py-1 rounded-full">建议检查：' + data.recommendedTests.slice(0,3).join('、') + (data.recommendedTests.length > 3 ? '...' : '') + '</span>' : '') + '</div>' : '') +
+          '<div class="sub-card"><h4 class="text-xs font-semibold text-gray-500 mb-1">发病原因</h4><p class="text-xs text-gray-600 leading-relaxed">' + data.cause + '</p></div>' +
+          '<div class="sub-card"><h4 class="text-xs font-semibold text-gray-500 mb-1">发病机理</h4><p class="text-xs text-gray-600 leading-relaxed">' + data.mechanism + '</p></div>' +
+          '<div class="sub-card"><h4 class="text-xs font-semibold text-gray-500 mb-1">诊断标准</h4><p class="text-xs text-gray-600 leading-relaxed">' + data.diagnosis + '</p></div>' +
+          '<div class="sub-card"><h4 class="text-xs font-semibold text-gray-500 mb-1">西医治疗</h4><p class="text-xs text-gray-600 leading-relaxed">' + data.treatment + '</p></div>' +
+          '<div class="sub-card"><h4 class="text-xs font-semibold text-gray-500 mb-1">中医证型分类</h4><p class="text-xs text-gray-600 leading-relaxed">' + data.tcm + '</p></div>' +
+          '<div class="border-t border-gray-100 pt-3">' +
+            '<h4 class="text-xs font-semibold text-gray-500 mb-2">生活建议</h4>' +
+            Object.entries(data.cards).map(function(entry) {
+              var key = entry[0]; var card = entry[1];
+              var dietHtml = '';
+              if (key === 'diet') {
+                dietHtml = '<div class="mb-2"><span class="text-xs text-green-600 font-semibold">宜吃：</span><div class="flex flex-wrap gap-1 mt-1">' + card.recommend.map(function(r) { return '<span class="text-xs bg-green-50 text-green-600 px-2 py-0.5 rounded">' + r + '</span>'; }).join('') + '</div></div><div><span class="text-xs text-red-500 font-semibold">忌吃：</span><div class="flex flex-wrap gap-1 mt-1">' + card.avoid.map(function(a) { return '<span class="text-xs bg-red-50 text-red-500 px-2 py-0.5 rounded">' + a + '</span>'; }).join('') + '</div></div>';
+              } else {
+                dietHtml = '<p class="text-xs text-gray-600 leading-relaxed">' + card.content + '</p>';
+              }
+              return '<div class="sub-card">' +
+                '<div class="flex items-center justify-between mb-2">' +
+                  '<div class="flex items-center gap-2"><span>' + card.icon + '</span><span class="text-sm font-semibold text-gray-700">' + card.title + '</span></div>' +
+                  '<button onclick="addToPlan(\'' + name + '\',\'' + key + '\',\'' + card.title + '\')" class="text-xs bg-primary text-white px-3 py-1 rounded-full hover:bg-primary-dark transition-colors">+ 加入计划</button>' +
+                '</div>' +
+                dietHtml +
+              '</div>';
+            }).join('') +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
   }).join('');
 }
 function toggleAccordion(btn) {
