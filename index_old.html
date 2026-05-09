@@ -1,0 +1,2108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>知体知医 - 个性化健康管理</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        primary: '#3ABFA8',
+        'primary-dark': '#2DA08E',
+        'primary-light': '#E8F8F5',
+        cream: '#FAF8F4',
+      }
+    }
+  }
+}
+</script>
+<style>
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif; background: #FAF8F4; color: #333; margin: 0; overflow-x: hidden; }
+::-webkit-scrollbar { width: 0; height: 0; }
+.skeleton { background: linear-gradient(90deg, #e8e8e8 25%, #f5f5f5 50%, #e8e8e8 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; }
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+.page { display: none; opacity: 0; transition: opacity 0.3s ease; }
+.page.active { display: block; opacity: 1; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 50; display: flex; align-items: flex-end; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+.modal-overlay.show { opacity: 1; pointer-events: auto; }
+.modal-content { background: #fff; border-radius: 20px 20px 0 0; width: 100%; max-width: 430px; max-height: 92vh; overflow-y: auto; padding: 24px 20px; transform: translateY(100%); transition: transform 0.3s ease; }
+.modal-overlay.show .modal-content { transform: translateY(0); }
+.score-circle { transition: stroke-dashoffset 1.5s ease-in-out; }
+.card-hover { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.card-hover:active { transform: scale(0.97); }
+.accordion-body { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+.accordion-body.open { max-height: 5000px; }
+@keyframes popIn { 0%{transform:scale(0)} 50%{transform:scale(1.3)} 100%{transform:scale(1)} }
+.pop-in { animation: popIn 0.4s ease; }
+@keyframes fadeInUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+.fade-in-up { animation: fadeInUp 0.5s ease forwards; }
+.cal-cell { width: 14px; height: 14px; border-radius: 3px; transition: background-color 0.2s; }
+.tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 13px; margin: 3px; cursor: pointer; transition: all 0.2s; }
+.welcome-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; display: flex; align-items: center; justify-content: center; }
+.welcome-box { background: #fff; border-radius: 20px; padding: 32px 24px; width: 90%; max-width: 400px; max-height: 85vh; overflow-y: auto; }
+.step-dot { width: 10px; height: 10px; border-radius: 50%; background: #ddd; transition: all 0.3s; }
+.step-dot.active { background: #3ABFA8; width: 28px; border-radius: 5px; }
+.step-dot.done { background: #3ABFA8; }
+.sub-card { background: #F9FAFB; border-radius: 12px; padding: 14px; margin-bottom: 10px; border: 1px solid #E5E7EB; transition: all 0.2s; }
+.sub-card:hover { border-color: #3ABFA8; }
+.choice-btn { padding: 10px 20px; border-radius: 10px; border: 2px solid #E5E7EB; cursor: pointer; transition: all 0.2s; font-size: 14px; background: #fff; }
+.choice-btn.selected { border-color: #3ABFA8; background: #E8F8F5; color: #2DA08E; }
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #E5E7EB; display: flex; justify-content: space-around; padding: 8px 0 calc(8px + env(safe-area-inset-bottom)); z-index: 40; max-width: 430px; margin: 0 auto; }
+.bottom-nav-item { display: flex; flex-direction: column; align-items: center; padding: 6px 20px; cursor: pointer; transition: all 0.2s; }
+.bottom-nav-item.active { color: #3ABFA8; }
+.bottom-nav-item:not(.active) { color: #9CA3AF; }
+.bottom-nav-item span { font-size: 11px; margin-top: 2px; }
+.page-content { padding-bottom: 80px; }
+</style>
+</head>
+<body>
+
+<!-- 骨架屏 -->
+<div id="skeleton-screen" class="fixed inset-0 bg-cream z-[200] flex flex-col items-center justify-center p-6">
+  <div class="w-full max-w-[430px]">
+    <div class="skeleton h-8 w-32 mb-6 mx-auto"></div>
+    <div class="skeleton w-40 h-40 rounded-full mx-auto mb-6"></div>
+    <div class="skeleton h-4 w-48 mx-auto mb-8"></div>
+    <div class="grid grid-cols-2 gap-4">
+      <div class="skeleton h-24 rounded-2xl"></div>
+      <div class="skeleton h-24 rounded-2xl"></div>
+      <div class="skeleton h-24 rounded-2xl"></div>
+      <div class="skeleton h-24 rounded-2xl"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 应用主容器 -->
+<div id="app" class="max-w-[430px] mx-auto min-h-screen bg-cream relative" style="opacity:0;transition:opacity 0.5s">
+
+  <!-- ==================== 首页 ==================== -->
+  <div id="page-home" class="page active px-5 pt-6 page-content">
+    <div class="flex items-center justify-between pb-4">
+      <div class="flex items-center gap-2">
+        <div class="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        </div>
+        <span class="text-lg font-bold text-gray-800">知体知医</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span id="home-nickname" class="text-sm text-gray-500"></span>
+        <div class="w-8 h-8 rounded-full bg-primary-light flex items-center justify-center">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3ABFA8" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- 综合健康分 -->
+    <div class="bg-white rounded-3xl p-6 shadow-sm mb-6 fade-in-up">
+      <div class="text-center mb-4"><span class="text-sm text-gray-400">综合健康分</span></div>
+      <div class="flex justify-center mb-3">
+        <div class="relative w-44 h-44">
+          <svg class="w-full h-full -rotate-90" viewBox="0 0 160 160">
+            <circle cx="80" cy="80" r="70" stroke="#F0F0F0" stroke-width="12" fill="none"/>
+            <circle id="score-arc" class="score-circle" cx="80" cy="80" r="70" stroke="#3ABFA8" stroke-width="12" fill="none" stroke-dasharray="439.82" stroke-dashoffset="439.82" stroke-linecap="round"/>
+          </svg>
+          <div class="absolute inset-0 flex flex-col items-center justify-center">
+            <span id="score-value" class="text-4xl font-bold text-gray-800">--</span>
+            <span id="score-label" class="text-xs text-gray-400 mt-1">加载中</span>
+          </div>
+        </div>
+      </div>
+      <div id="score-desc" class="text-center text-sm text-gray-500"></div>
+    </div>
+
+    <!-- 2×2 功能网格（包含反馈、测试、提分、档案） -->
+    <div class="grid grid-cols-2 gap-4">
+      <div onclick="openFeedback()" class="card-hover bg-white rounded-2xl p-5 shadow-sm cursor-pointer">
+        <div class="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center mb-3 text-xl">🗣️</div>
+        <div class="font-semibold text-gray-800 text-sm mb-1">反馈下</div>
+        <div class="text-xs text-gray-400">记录今日身体感受</div>
+      </div>
+      <div onclick="openTest()" class="card-hover bg-white rounded-2xl p-5 shadow-sm cursor-pointer">
+        <div class="w-11 h-11 rounded-xl bg-purple-50 flex items-center justify-center mb-3 text-xl">🔍</div>
+        <div class="font-semibold text-gray-800 text-sm mb-1">测一下</div>
+        <div class="text-xs text-gray-400">风险自测评估</div>
+      </div>
+      <div onclick="switchPage('improve')" class="card-hover bg-white rounded-2xl p-5 shadow-sm cursor-pointer">
+        <div class="w-11 h-11 rounded-xl bg-green-50 flex items-center justify-center mb-3 text-xl">🚀</div>
+        <div class="font-semibold text-gray-800 text-sm mb-1">我要提分</div>
+        <div class="text-xs text-gray-400">学习计划打卡</div>
+      </div>
+      <div onclick="switchPage('profile')" class="card-hover bg-white rounded-2xl p-5 shadow-sm cursor-pointer">
+        <div class="w-11 h-11 rounded-xl bg-orange-50 flex items-center justify-center mb-3 text-xl">📋</div>
+        <div class="font-semibold text-gray-800 text-sm mb-1">健康档案</div>
+        <div class="text-xs text-gray-400">个人信息管理</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 提分页 ==================== -->
+  <div id="page-improve" class="page px-5 pt-6 page-content">
+    <h2 class="text-lg font-bold text-gray-800 mb-4">🚀 我要提分</h2>
+    
+    <div class="flex border-b border-gray-100 mb-4">
+      <button onclick="switchImproveTab('learn')" id="tab-learn" class="flex-1 py-2 text-sm font-semibold text-primary border-b-2 border-primary">学习</button>
+      <button onclick="switchImproveTab('plan')" id="tab-plan" class="flex-1 py-2 text-sm font-semibold text-gray-400 border-b-2 border-transparent">我的计划</button>
+      <button onclick="switchImproveTab('checkin')" id="tab-checkin" class="flex-1 py-2 text-sm font-semibold text-gray-400 border-b-2 border-transparent">打卡&分享</button>
+    </div>
+
+    <!-- 学习页签 -->
+    <div id="improve-learn" class="improve-tab">
+      <div id="no-disease-tip" class="hidden text-center py-10">
+        <p class="text-3xl mb-3">📝</p>
+        <p class="text-gray-500 text-sm">暂无个性化学习推荐</p>
+        <p class="text-xs text-gray-400 mt-2">请在档案中添加疾病史以获取个性化内容</p>
+        <button onclick="switchPage('profile')" class="mt-4 px-6 py-2 bg-primary text-white rounded-full text-sm">去添加</button>
+      </div>
+      <div id="disease-accordion" class="space-y-3"></div>
+    </div>
+
+    <!-- 我的计划页签 -->
+    <div id="improve-plan" class="improve-tab hidden">
+      <div id="my-plan-list" class="space-y-3"></div>
+      <div id="plan-empty" class="text-center py-10 text-gray-400 text-sm">
+        <p class="text-3xl mb-2">📝</p>
+        <p>还没有加入任何计划</p>
+        <p class="text-xs mt-1">去"学习"页面添加健康计划吧</p>
+      </div>
+    </div>
+
+    <!-- 打卡&分享页签 -->
+    <div id="improve-checkin" class="improve-tab hidden">
+      <div class="mb-5">
+        <h3 class="font-semibold text-gray-700 text-sm mb-3">本月打卡</h3>
+        <div class="flex items-center justify-between mb-2">
+          <button onclick="changeMonth(-1)" class="text-gray-400 hover:text-gray-600">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <span id="calendar-month" class="text-sm font-semibold text-gray-600"></span>
+          <button onclick="changeMonth(1)" class="text-gray-400 hover:text-gray-600">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+        <div class="flex justify-between text-xs text-gray-400 mb-1 px-1">
+          <span class="w-[14px] text-center">一</span><span class="w-[14px] text-center">二</span><span class="w-[14px] text-center">三</span><span class="w-[14px] text-center">四</span><span class="w-[14px] text-center">五</span><span class="w-[14px] text-center">六</span><span class="w-[14px] text-center">日</span>
+        </div>
+        <div id="calendar-grid" class="grid grid-cols-7 gap-1 justify-items-center"></div>
+      </div>
+
+      <div class="bg-white rounded-2xl p-4 border border-gray-100 mb-4">
+        <div class="flex items-center justify-between mb-3">
+          <span class="font-semibold text-gray-700 text-sm">今日打卡进度</span>
+          <span id="checkin-progress" class="text-xs text-primary font-semibold"></span>
+        </div>
+        <div id="today-plan-list" class="space-y-2 mb-3"></div>
+        <p id="checkin-tip" class="text-xs text-gray-400 text-center"></p>
+      </div>
+
+      <div class="mb-5">
+        <h3 class="font-semibold text-gray-700 text-sm mb-3">连续打卡徽章</h3>
+        <div class="flex gap-3">
+          <div id="badge-3" class="badge bg-gray-100 text-gray-400"><span>🏅</span> 3天</div>
+          <div id="badge-7" class="badge bg-gray-100 text-gray-400"><span>🥇</span> 7天</div>
+          <div id="badge-30" class="badge bg-gray-100 text-gray-400"><span>🏆</span> 30天</div>
+        </div>
+      </div>
+
+      <button onclick="shareAchievement()" class="w-full bg-gradient-to-r from-primary to-teal-400 text-white py-3 rounded-xl font-semibold mb-5">📤 分享我的健康成就</button>
+
+      <div>
+        <h3 class="font-semibold text-gray-700 text-sm mb-3">健康分趋势</h3>
+        <div class="bg-white rounded-2xl p-4 border border-gray-100">
+          <canvas id="score-chart" width="370" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 档案页 ==================== -->
+  <div id="page-profile" class="page px-5 pt-6 page-content">
+    <h2 class="text-lg font-bold text-gray-800 mb-4">📋 健康档案</h2>
+    
+    <div class="bg-primary-light rounded-2xl p-4 mb-4">
+      <h3 class="font-semibold text-primary-dark text-sm mb-3">基本信息</h3>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs text-gray-400">昵称</label>
+          <input id="sum-nickname" class="w-full border border-gray-200 rounded-lg p-2 text-sm mt-1 focus:outline-none focus:border-primary" />
+        </div>
+        <div>
+          <label class="text-xs text-gray-400">年龄</label>
+          <input id="sum-age" type="number" min="1" max="120" placeholder="输入年龄" class="w-full border border-gray-200 rounded-lg p-2 text-sm mt-1 focus:outline-none focus:border-primary" />
+        </div>
+        <div>
+          <label class="text-xs text-gray-400">性别</label>
+          <select id="sum-gender" class="w-full border border-gray-200 rounded-lg p-2 text-sm mt-1 focus:outline-none focus:border-primary">
+            <option value="">请选择</option><option>男</option><option>女</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs text-gray-400">血型</label>
+          <select id="sum-blood" class="w-full border border-gray-200 rounded-lg p-2 text-sm mt-1 focus:outline-none focus:border-primary">
+            <option value="">请选择</option><option>A</option><option>B</option><option>AB</option><option>O</option><option>不详</option>
+          </select>
+        </div>
+      </div>
+      <button onclick="saveBasicInfo()" class="mt-3 text-sm text-primary font-semibold">保存信息</button>
+    </div>
+
+    <div class="mb-4">
+      <h3 class="font-semibold text-gray-700 text-sm mb-2">近期状况关键词</h3>
+      <div id="sum-keywords" class="flex flex-wrap gap-1"></div>
+    </div>
+
+    <div class="mb-4">
+      <h3 class="font-semibold text-gray-700 text-sm mb-2">疾病史</h3>
+      <div class="flex gap-2 mb-2">
+        <input id="disease-input" placeholder="添加疾病" class="flex-1 border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:border-primary" />
+        <button onclick="addDisease()" class="bg-primary text-white px-4 rounded-lg text-sm">添加</button>
+      </div>
+      <div id="disease-list" class="flex flex-wrap gap-2"></div>
+    </div>
+
+    <div class="mb-4">
+      <h3 class="font-semibold text-gray-700 text-sm mb-2">过敏史</h3>
+      <div class="space-y-2">
+        <div>
+          <span class="text-xs text-gray-400">💊 药物过敏</span>
+          <div class="flex gap-2 mt-1">
+            <input id="allergy-drug-input" placeholder="如：青霉素" class="flex-1 border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:border-primary" />
+            <button onclick="addAllergy('drug')" class="bg-primary text-white px-3 rounded-lg text-xs">添加</button>
+          </div>
+          <div id="allergy-drug-list" class="flex flex-wrap gap-1 mt-1"></div>
+        </div>
+        <div>
+          <span class="text-xs text-gray-400">🥜 食物过敏</span>
+          <div class="flex gap-2 mt-1">
+            <input id="allergy-food-input" placeholder="如：花生" class="flex-1 border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:border-primary" />
+            <button onclick="addAllergy('food')" class="bg-primary text-white px-3 rounded-lg text-xs">添加</button>
+          </div>
+          <div id="allergy-food-list" class="flex flex-wrap gap-1 mt-1"></div>
+        </div>
+        <div>
+          <span class="text-xs text-gray-400">🌿 环境过敏</span>
+          <div class="flex gap-2 mt-1">
+            <input id="allergy-env-input" placeholder="如：花粉" class="flex-1 border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:border-primary" />
+            <button onclick="addAllergy('env')" class="bg-primary text-white px-3 rounded-lg text-xs">添加</button>
+          </div>
+          <div id="allergy-env-list" class="flex flex-wrap gap-1 mt-1"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mb-4">
+      <h3 class="font-semibold text-gray-700 text-sm mb-2">分享码</h3>
+      <div class="flex gap-2">
+        <div class="flex-1 bg-gray-50 rounded-lg p-3 text-center font-mono text-lg font-bold tracking-widest" id="my-share-code">------</div>
+        <button onclick="generateShareCode()" class="bg-primary text-white px-4 rounded-lg text-sm">生成</button>
+      </div>
+    </div>
+
+    <button onclick="exportData()" class="w-full bg-gray-800 text-white py-3 rounded-xl font-semibold">导出健康档案</button>
+  </div>
+
+  <!-- 底部导航栏 -->
+  <div class="bottom-nav">
+    <div class="bottom-nav-item active" onclick="switchPage('home')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>首页</span>
+    </div>
+    <div class="bottom-nav-item" onclick="switchPage('improve')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+      <span>提分</span>
+    </div>
+    <div class="bottom-nav-item" onclick="switchPage('profile')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      <span>档案</span>
+    </div>
+  </div>
+
+  <!-- 模块一：反馈下 模态框 -->
+  <div id="modal-feedback" class="modal-overlay" onclick="closeOnOverlay(event,'modal-feedback')">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="text-lg font-bold text-gray-800">🗣️ 反馈下</h2>
+        <button onclick="closeModal('modal-feedback')" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="mb-4">
+        <span class="text-sm text-gray-500 mb-2 block">今天感觉如何？</span>
+        <div class="flex gap-3">
+          <button onclick="selectQuickTag(this,'很好')" class="tag bg-green-50 text-green-600 hover:bg-green-100">😊 很好</button>
+          <button onclick="selectQuickTag(this,'一般')" class="tag bg-yellow-50 text-yellow-600 hover:bg-yellow-100">😐 一般</button>
+          <button onclick="selectQuickTag(this,'不舒服')" class="tag bg-red-50 text-red-500 hover:bg-red-100">😣 不舒服</button>
+        </div>
+      </div>
+      <div class="mb-4">
+        <textarea id="feedback-text" rows="4" placeholder="详细描述你的身体状况（可选）..." class="w-full border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-none focus:border-primary"></textarea>
+      </div>
+      <div class="mb-4">
+        <div id="file-upload-area" onclick="simulateUpload()" class="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center cursor-pointer hover:border-primary">
+          <svg class="mx-auto mb-2" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span class="text-xs text-gray-400">点击上传检查报告/照片</span>
+        </div>
+        <div id="file-list" class="mt-2"></div>
+      </div>
+      <button onclick="submitFeedback()" class="w-full bg-primary text-white py-3 rounded-xl font-semibold">提交反馈</button>
+      <div id="feedback-response" class="hidden mt-4 p-4 bg-primary-light rounded-xl text-sm text-gray-700"></div>
+      <div class="mt-6">
+        <h3 class="text-sm font-semibold text-gray-600 mb-3">历史反馈</h3>
+        <div id="feedback-history" class="space-y-3 max-h-60 overflow-y-auto"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 模块二：测一下 模态框 -->
+  <div id="modal-test" class="modal-overlay" onclick="closeOnOverlay(event,'modal-test')">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="text-lg font-bold text-gray-800">🔍 测一下</h2>
+        <button onclick="closeModal('modal-test')" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="flex items-center justify-center gap-2 mb-6">
+        <div id="test-step-dot-1" class="step-dot active"></div>
+        <div id="test-step-dot-2" class="step-dot"></div>
+      </div>
+      <div id="test-step-1" class="test-step">
+        <h3 class="font-semibold text-gray-700 mb-2">根据您的疾病风险推荐</h3>
+        <p class="text-xs text-gray-400 mb-4">以下自测项目与您的疾病史相关</p>
+        <div id="risk-test-list" class="space-y-4"></div>
+        <div id="no-risk-tip" class="hidden text-center py-8">
+          <p class="text-gray-400 text-sm">暂无需要确认的风险</p>
+          <p class="text-xs text-gray-300 mt-2">请在档案中添加疾病史以获取个性化推荐</p>
+        </div>
+        <div class="flex gap-3 mt-6">
+          <button onclick="closeModal('modal-test')" class="flex-1 border border-gray-200 text-gray-600 py-3 rounded-xl font-semibold">取消</button>
+          <button onclick="testNextStep(2)" class="flex-1 bg-primary text-white py-3 rounded-xl font-semibold">查看结果</button>
+        </div>
+      </div>
+      <div id="test-step-2" class="test-step hidden">
+        <h3 class="font-semibold text-gray-700 mb-4">自测结果</h3>
+        <div id="test-result" class="space-y-3 mb-4"></div>
+        <div id="test-summary-box" class="p-4 rounded-xl mb-4"></div>
+        <button onclick="saveTestResult()" class="w-full bg-primary text-white py-3 rounded-xl font-semibold mb-3">保存到档案</button>
+        <button onclick="closeModal('modal-test')" class="w-full border border-gray-200 text-gray-500 py-3 rounded-xl font-semibold">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 欢迎弹窗 -->
+  <div id="welcome-modal" class="welcome-overlay hidden">
+    <div class="welcome-box">
+      <div class="text-center mb-5">
+        <div class="w-16 h-16 rounded-2xl bg-primary mx-auto flex items-center justify-center mb-3">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        </div>
+        <h2 class="text-xl font-bold text-gray-800">欢迎使用知体知医</h2>
+        <p class="text-sm text-gray-400 mt-1">让我们先了解一下你</p>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="text-sm text-gray-500 mb-1 block">你的昵称</label>
+          <input id="welcome-nickname" placeholder="怎么称呼你？" class="w-full border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:border-primary" />
+        </div>
+        <div>
+          <label class="text-sm text-gray-500 mb-1 block">年龄</label>
+          <input id="welcome-age" type="number" min="1" max="120" placeholder="请输入年龄" class="w-full border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:border-primary" />
+        </div>
+        <div>
+          <label class="text-sm text-gray-500 mb-2 block">性别</label>
+          <div class="flex gap-3">
+            <button onclick="selectChoice(this,'welcome-gender')" class="choice-btn flex-1" data-value="男">男</button>
+            <button onclick="selectChoice(this,'welcome-gender')" class="choice-btn flex-1" data-value="女">女</button>
+          </div>
+        </div>
+        <div>
+          <label class="text-sm text-gray-500 mb-1 block">已知疾病（多选，可跳过）</label>
+          <div class="flex flex-wrap gap-2 max-h-48 overflow-y-auto">
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="高血压">高血压</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="糖尿病">糖尿病</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="脂肪肝">脂肪肝</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="心脏病">心脏病</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="失眠">失眠</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="颈椎病">颈椎病</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="胃炎">胃炎</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="痛风">痛风</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="焦虑症">焦虑症</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="抑郁症">抑郁症</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="肥胖症">肥胖症</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="高血脂">高血脂</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="冠心病">冠心病</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="心律失常">心律失常</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="甲状腺功能亢进">甲亢</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="甲状腺功能减退">甲减</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="胃溃疡">胃溃疡</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="肠易激综合征">肠易激综合征</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="哮喘">哮喘</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="慢性支气管炎">慢性支气管炎</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="过敏性鼻炎">过敏性鼻炎</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="偏头痛">偏头痛</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="腰椎间盘突出">腰椎间盘突出</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="骨质疏松">骨质疏松</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="类风湿关节炎">类风湿关节炎</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="慢性肾病">慢性肾病</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="肾结石">肾结石</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="湿疹">湿疹</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="银屑病">银屑病</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="痤疮">痤疮</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="月经不调">月经不调</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="多囊卵巢综合征">多囊卵巢综合征</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="贫血">贫血</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="干眼症">干眼症</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="甲状腺结节">甲状腺结节</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="高尿酸血症">高尿酸血症</button>
+          </div>
+        </div>
+        <div>
+          <label class="text-sm text-gray-500 mb-1 block">过敏史（可跳过）</label>
+          <input id="welcome-allergy" placeholder="如：青霉素、花粉" class="w-full border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:border-primary" />
+        </div>
+      </div>
+      <button onclick="finishWelcome()" class="w-full mt-6 bg-primary text-white py-3 rounded-xl font-semibold">开始使用</button>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed top-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-5 py-3 rounded-xl text-sm z-[300] opacity-0 pointer-events-none transition-opacity duration-300 shadow-lg"></div>
+
+</div>
+
+<script>
+// ========== 常量 ==========
+const STORAGE_PREFIX = 'ztzy_';
+const SCORE_CIRCUMFERENCE = 2 * Math.PI * 70;
+const ENCOURAGEMENTS = ['坚持就是胜利！','健康是最好的投资！','今天的你比昨天更健康！','每一步都算数！','自律给你自由！','你的身体会感谢你！','好习惯正在养成！','健康之路，贵在坚持！','你比大多数人更关注健康！','离目标又近了一步！'];
+
+const DISEASE_DB = {
+  // ===== 心血管系统 =====
+  '高血压': {
+    icon: '❤️', 
+    cause: '原发性高血压与遗传、高盐饮食、肥胖、精神紧张、吸烟饮酒等因素相关。继发性高血压可由肾脏疾病、内分泌疾病等引起。', 
+    mechanism: '血管外周阻力增加和/或心输出量增加导致动脉血压持续升高，长期可导致血管内皮损伤和靶器官损害。', 
+    diagnosis: '收缩压≥140mmHg和/或舒张压≥90mmHg（非同日3次测量）。需排除白大衣高血压。', 
+    treatment: '一线药物：ACEI/ARB、CCB、利尿剂、β受体阻滞剂。生活方式干预是基础。', 
+    tcm: '肝阳上亢型（天麻钩藤饮）、痰湿内阻型（半夏白术天麻汤）、肝肾阴虚型（杞菊地黄丸）。',
+    department: '心内科',
+    recommendedTests: ['血压监测', '心电图', '心脏超声', '肾功能', '血脂四项'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '保持情绪稳定，避免大喜大悲。练习冥想、深呼吸，每天15分钟。避免长期精神紧张。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['芹菜、菠菜、香蕉', '燕麦、糙米', '深海鱼', '脱脂牛奶', '大蒜、洋葱'], avoid: ['腌制食品', '肥肉、动物内脏', '浓茶、浓咖啡', '高盐调味品'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '有氧运动为主：快走、游泳、骑车，每次30-45分钟，每周5次。推荐八段锦、太极拳。避免剧烈运动和憋气动作。' },
+      environment: { icon: '🌿', title: '环境调节', content: '保持居住环境安静、通风。室内温度适宜（18-24°C）。避免寒冷刺激，冬季注意保暖。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '保证每晚7-8小时睡眠。规律作息，固定入睡和起床时间。避免熬夜。' }
+    }
+  },
+  '心脏病': {
+    icon: '💓', 
+    cause: '冠心病、高血压性心脏病、心肌病、心律失常、先天性心脏病、瓣膜病等。危险因素包括高血压、高血脂、糖尿病、吸烟、肥胖。', 
+    mechanism: '心肌缺血、心脏负荷过重、心肌损伤等导致心功能下降，严重时可发生心力衰竭。', 
+    diagnosis: '心电图、心脏超声、冠脉造影、心肌酶谱、BNP等检查。冠脉CTA可评估冠脉狭窄。', 
+    treatment: '根据具体类型选择药物治疗（抗血小板、他汀、ACEI等）、介入治疗（PCI）或手术治疗（CABG）。', 
+    tcm: '气虚血瘀型（补阳还五汤）、心阳不振型（桂枝甘草汤）、痰浊闭阻型（瓜蒌薤白半夏汤）。',
+    department: '心内科/心脏外科',
+    recommendedTests: ['心电图', '心脏超声', '冠脉CTA', '心肌酶谱', 'BNP', '血脂四项'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '保持情绪稳定，避免过度激动。学会放松，减少精神压力。避免焦虑和抑郁情绪。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['深海鱼', '燕麦、全谷物', '新鲜蔬果', '坚果（适量）', '橄榄油'], avoid: ['高盐食品', '高脂肪食物', '过量咖啡因', '酒精', '油炸食品'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '在医生指导下进行适度有氧运动。避免剧烈运动和情绪激动。心功能不全者需限制运动量。' },
+      environment: { icon: '🌿', title: '环境调节', content: '避免寒冷刺激。保持居住环境安静舒适。避免高海拔地区。注意防寒保暖。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '保证充足睡眠。睡眠时可将床头抬高。避免睡前剧烈活动。如有夜间阵发性呼吸困难需及时就医。' }
+    }
+  },
+  '高血脂': {
+    icon: '🩸', 
+    cause: '遗传因素、高脂饮食、缺乏运动、肥胖、糖尿病、甲状腺功能减退、肾病综合征等。', 
+    mechanism: '脂代谢紊乱，血浆中TC、TG、LDL-C升高，HDL-C降低，导致动脉粥样硬化。', 
+    diagnosis: 'TC≥5.2mmol/L，或TG≥1.7mmol/L，或LDL-C≥3.4mmol/L。需空腹12小时抽血。', 
+    treatment: '他汀类为一线药物。TG高可加用贝特类或Omega-3。PCSK9抑制剂用于难治性高脂血症。', 
+    tcm: '痰浊内阻型（瓜蒌薤白半夏汤）、脾虚湿盛型（参苓白术散）、肝肾阴虚型（首乌延寿丹）。',
+    department: '心内科/内分泌科',
+    recommendedTests: ['血脂四项', '肝功能', '血糖', '甲状腺功能', '心电图'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '正确认识血脂异常，积极配合治疗。建立健康生活方式是基础。不要过度焦虑。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['深海鱼', '燕麦、豆类', '坚果（适量）', '橄榄油', '新鲜蔬果', '绿茶'], avoid: ['动物内脏', '肥肉、油炸食品', '黄油、奶油', '蛋黄（限量）', '反式脂肪酸'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '有氧运动有助于改善血脂。快走、慢跑、游泳，每周150分钟以上。结合抗阻训练效果更佳。' },
+      environment: { icon: '🌿', title: '环境调节', content: '减少饱和脂肪和反式脂肪摄入。选择植物油烹饪。增加膳食纤维摄入。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '保证充足睡眠。避免熬夜，熬夜会影响脂代谢。规律作息有助于血脂控制。' }
+    }
+  },
+  '冠心病': {
+    icon: '💔', 
+    cause: '冠状动脉粥样硬化导致管腔狭窄或阻塞。危险因素：高血压、高血脂、糖尿病、吸烟、肥胖、家族史。', 
+    mechanism: '冠状动脉粥样斑块形成，导致心肌供血不足，严重时发生心肌梗死。', 
+    diagnosis: '心电图、运动平板试验、冠脉CTA、冠脉造影（金标准）。心肌梗死需查心肌酶谱。', 
+    treatment: '药物治疗（抗血小板、他汀、硝酸酯类、β阻滞剂）、PCI、CABG。急性心梗需急诊再灌注。', 
+    tcm: '心血瘀阻型（血府逐瘀汤）、痰浊闭阻型（瓜蒌薤白半夏汤）、气阴两虚型（生脉散）。',
+    department: '心内科/心脏外科',
+    recommendedTests: ['心电图', '冠脉CTA', '冠脉造影', '心肌酶谱', '血脂四项', '心脏超声'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '避免情绪激动和精神紧张。保持心态平和。学习放松技巧，如腹式呼吸。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['深海鱼', '全谷物', '新鲜蔬果', '坚果（适量）', '豆制品'], avoid: ['高脂肪食物', '高胆固醇食物', '高盐食品', '酒精', '暴饮暴食'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '在医生指导下进行适度有氧运动。避免剧烈运动。心绞痛发作时立即停止活动。' },
+      environment: { icon: '🌿', title: '环境调节', content: '避免寒冷刺激，冬季外出注意保暖。保持室内温度适宜。避免去高海拔地区。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '保证充足睡眠。避免睡前饱餐。如有夜间胸痛需警惕，及时就医。' }
+    }
+  },
+  '心律失常': {
+    icon: '💓', 
+    cause: '冠心病、高血压、心肌病、电解质紊乱、甲状腺功能异常、药物副作用、自主神经功能紊乱。', 
+    mechanism: '心脏传导系统异常或心肌细胞电生理特性改变，导致心跳节律或频率异常。', 
+    diagnosis: '心电图、24小时动态心电图、心电监测、电生理检查。需明确心律失常类型。', 
+    treatment: '根据类型选择：药物治疗（抗心律失常药）、射频消融、起搏器植入、ICD。', 
+    tcm: '心虚胆怯型（安神定志丸）、心血不足型（归脾汤）、阴虚火旺型（天王补心丹）。',
+    department: '心内科/电生理科',
+    recommendedTests: ['心电图', '24小时动态心电图', '心脏超声', '电解质', '甲状腺功能'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '避免焦虑和紧张情绪。保持心态平和。学习放松技巧。避免过度关注心跳。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['富含钾镁的食物', '香蕉、橙子', '坚果', '绿叶蔬菜'], avoid: ['过量咖啡因', '酒精', '浓茶', '暴饮暴食', '过饱'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '根据心律失常类型和医生建议运动。避免剧烈运动。适度散步、太极拳有益。' },
+      environment: { icon: '🌿', title: '环境调节', content: '避免过度疲劳和熬夜。保持规律作息。避免长时间使用电子产品。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '保证充足睡眠。避免熬夜。左侧卧位可能减轻某些心律失常症状。' }
+    }
+  },
+  '心肌炎': {
+    icon: '🫀', 
+    cause: '病毒感染最常见（柯萨奇病毒、流感病毒等），也可由细菌、药物、自身免疫等引起。', 
+    mechanism: '病毒直接损伤心肌细胞或免疫介导的心肌炎症反应，导致心功能障碍。', 
+    diagnosis: '心电图异常、心肌酶谱升高、心脏超声、心肌MRI、病毒学检查。', 
+    treatment: '急性期卧床休息最重要。对症支持治疗。严重者可能需要机械辅助循环。', 
+    tcm: '热毒侵心型（银翘散加减）、气阴两虚型（生脉散）、心阳虚衰型（参附汤）。',
+    department: '心内科',
+    recommendedTests: ['心电图', '心肌酶谱', '肌钙蛋白', '心脏超声', '心肌MRI', '病毒学检查'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '急性期需绝对休息，避免焦虑。恢复期保持乐观心态。避免过早恢复运动。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['易消化食物', '富含维生素的食物', '优质蛋白', '新鲜蔬果'], avoid: ['辛辣刺激食物', '酒精', '咖啡因', '油腻食物'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '急性期绝对卧床休息。恢复期需医生评估后逐步恢复运动，通常需3-6个月。' },
+      environment: { icon: '🌿', title: '环境调节', content: '避免感染，注意个人卫生。保持室内通风。避免去人群密集场所。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '保证充足睡眠，有利于心肌修复。避免熬夜和过度劳累。' }
+    }
+  },
+
+  // ===== 内分泌系统 =====
+  '糖尿病': {
+    icon: '💉', 
+    cause: '1型糖尿病为自身免疫破坏胰岛β细胞；2型糖尿病与胰岛素抵抗、肥胖、遗传、生活方式相关。', 
+    mechanism: '胰岛素分泌不足或胰岛素抵抗导致血糖利用障碍，长期高血糖损害多器官。', 
+    diagnosis: '空腹血糖≥7.0mmol/L，或餐后2h血糖≥11.1mmol/L，或HbA1c≥6.5%。', 
+    treatment: '2型一线：二甲双胍。其他：SGLT2抑制剂、GLP-1RA、DPP-4抑制剂、胰岛素。', 
+    tcm: '阴虚热盛型（消渴方）、气阴两虚型（生脉散合六味地黄丸）、阴阳两虚型（金匮肾气丸）。',
+    department: '内分泌科',
+    recommendedTests: ['空腹血糖', '餐后2h血糖', '糖化血红蛋白', '尿微量白蛋白', '眼底检查', '足部检查'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '正确认识糖尿病，消除恐惧。保持乐观心态，避免焦虑。接受糖尿病教育。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['苦瓜、南瓜、山药', '糙米、燕麦', '绿叶蔬菜', '优质蛋白', '豆类'], avoid: ['含糖饮料、甜食', '白米饭、白面包', '高糖水果', '蜂蜜', '酒精'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '餐后1小时运动最佳，每次30分钟，每周5次。推荐快走、太极拳、八段锦。避免空腹运动。' },
+      environment: { icon: '🌿', title: '环境调节', content: '注意足部护理，穿合适鞋袜。保持皮肤清洁干燥。随身携带糖果预防低血糖。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '规律作息对血糖控制至关重要。保证7-8小时睡眠。睡眠不足会影响血糖。' }
+    }
+  },
+  '甲状腺功能亢进': {
+    icon: '🦋', 
+    cause: 'Graves病最常见（自身免疫性），也可由甲状腺炎、甲状腺结节、碘摄入过多等引起。', 
+    mechanism: '甲状腺激素分泌过多，导致代谢亢进、交感神经兴奋。', 
+    diagnosis: 'TSH降低、FT3/FT4升高。甲状腺超声、甲状腺摄碘率、TRAb检测。', 
+    treatment: '抗甲状腺药物（甲巯咪唑、丙硫氧嘧啶）、放射性碘治疗、手术治疗。', 
+    tcm: '气滞痰凝型（四海舒郁丸）、阴虚火旺型（天王补心丹）、气阴两虚型（生脉散）。',
+    department: '内分泌科',
+    recommendedTests: ['甲状腺功能', 'TRAb', '甲状腺超声', '心电图', '血常规', '肝功能'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '甲亢患者易焦虑烦躁，需学会情绪管理。保持心态平和，避免精神刺激。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['高蛋白、高维生素', '新鲜蔬果', '充足饮水'], avoid: ['高碘食物（海带、紫菜）', '咖啡因', '酒精', '辛辣刺激食物'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '症状控制后可适度运动。避免剧烈运动。心率过快时需休息。' },
+      environment: { icon: '🌿', title: '环境调节', content: '避免精神刺激和过度劳累。保持环境安静舒适。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '保证充足睡眠。甲亢患者常有失眠，需积极治疗原发病。' }
+    }
+  },
+  '甲状腺功能减退': {
+    icon: '🐢', 
+    cause: '桥本甲状腺炎最常见，也可由甲状腺手术后、放射性碘治疗后、碘缺乏等引起。', 
+    mechanism: '甲状腺激素分泌不足，导致代谢减慢、多系统功能减退。', 
+    diagnosis: 'TSH升高、FT4降低。甲状腺超声、TPOAb检测。', 
+    treatment: '左甲状腺素钠（优甲乐）替代治疗，需终身服药。定期监测甲状腺功能。', 
+    tcm: '脾肾阳虚型（右归丸）、心肾阳虚型（真武汤）、阳气衰竭型（参附汤）。',
+    department: '内分泌科',
+    recommendedTests: ['甲状腺功能', 'TPOAb', '甲状腺超声', '血脂', '心电图'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '甲减患者易疲劳、抑郁，需保持积极心态。规律服药，定期复查。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['富含碘的食物（适量）', '优质蛋白', '新鲜蔬果', '全谷物'], avoid: ['过量十字花科蔬菜', '高胆固醇食物', '过多饱和脂肪'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '适度运动有助于改善代谢。从轻度运动开始，如散步、瑜伽。避免过度疲劳。' },
+      environment: { icon: '🌿', title: '环境调节', content: '注意保暖，甲减患者怕冷。保持室内温度适宜。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '保证充足睡眠。甲减患者常有嗜睡，需规律作息。' }
+    }
+  },
+  '痛风': {
+    icon: '🦶', 
+    cause: '高尿酸血症是基础。诱因：高嘌呤饮食、饮酒、利尿剂、肥胖、肿瘤溶解综合征。', 
+    mechanism: '血尿酸过饱和析出尿酸盐结晶，沉积于关节和组织，触发炎症反应。', 
+    diagnosis: '急性关节炎：突发单关节红肿热痛，第一跖趾关节最常见。血尿酸>420μmol/L。关节超声、双源CT。', 
+    treatment: '急性期：NSAIDs、秋水仙碱、糖皮质激素。间歇期降尿酸：别嘌醇、非布司他、苯溴马隆。', 
+    tcm: '湿热蕴结型（四妙散）、瘀热阻滞型（枝藤汤加减）、痰浊阻滞型（涤痰汤）。',
+    department: '风湿免疫科/内分泌科',
+    recommendedTests: ['血尿酸', '肾功能', '关节超声', '双源CT', '24小时尿尿酸'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '痛风需长期管理，建立正确认知。记录发作诱因，针对性预防。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['低脂牛奶', '鸡蛋', '大量蔬菜', '樱桃', '充足饮水（2000ml/天）'], avoid: ['动物内脏、海鲜', '浓肉汤', '啤酒、白酒', '含果糖饮料', '豆制品（限量）'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '急性发作期休息。间歇期适度有氧运动，避免剧烈运动。保持理想体重。' },
+      environment: { icon: '🌿', title: '环境调节', content: '注意关节保暖，寒冷可诱发发作。选择舒适透气的鞋子。避免关节损伤。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '规律作息有助于尿酸代谢。保证7-8小时睡眠。避免熬夜。' }
+    }
+  },
+  '肥胖症': {
+    icon: '⚖️', 
+    cause: '能量摄入过多、体力活动不足、遗传因素、内分泌代谢异常（如甲减、库欣综合征）、药物因素。', 
+    mechanism: '脂肪组织过度蓄积，导致胰岛素抵抗、慢性炎症状态，增加多种疾病风险。', 
+    diagnosis: 'BMI≥28kg/m²为肥胖。腰围：男性≥90cm，女性≥85cm为中心性肥胖。需排除继发性肥胖。', 
+    treatment: '生活方式干预是基础。药物：奥利司他、GLP-1RA（司美格鲁肽）。严重者可考虑减重手术。', 
+    tcm: '脾虚湿阻型（参苓白术散）、胃热湿阻型（防风通圣散）、肝郁气滞型（柴胡疏肝散）。',
+    department: '内分泌科/营养科',
+    recommendedTests: ['BMI', '腰围', '血糖', '血脂', '甲状腺功能', '胰岛素释放试验'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '建立健康体重认知，避免极端减肥。设定合理目标，每周减0.5-1kg。接受专业指导。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['蔬菜（大量）', '优质蛋白', '全谷物', '低糖水果', '充足饮水'], avoid: ['含糖饮料', '高糖零食', '油炸食品', '加工肉类', '快餐'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '有氧运动+抗阻训练结合。有氧：快走、游泳、骑车，每周150-300分钟。循序渐进。' },
+      environment: { icon: '🌿', title: '环境调节', content: '减少高热量食物诱惑。厨房不放零食。使用小餐具控制份量。记录饮食日记。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '保证充足睡眠有助于体重控制。规律作息，避免熬夜。睡眠不足会增加食欲。' }
+    }
+  },
+
+  // ===== 消化系统 =====
+  '胃炎': {
+    icon: '🤢', 
+    cause: '幽门螺杆菌(Hp)感染是最常见原因。其他：NSAIDs使用、酒精、应激、胆汁反流。', 
+    mechanism: '胃黏膜防御因子与攻击因子失衡，导致黏膜炎症、损伤。', 
+    diagnosis: '胃镜检查为金标准。Hp检测：C13/C14呼气试验、胃镜活检。', 
+    treatment: 'Hp阳性：铋剂四联疗法14天。抑酸：PPI或H2RA。胃黏膜保护剂。', 
+    tcm: '脾胃虚弱型（香砂六君子汤）、脾胃湿热型（半夏泻心汤）、肝胃不和型（柴胡疏肝散）。',
+    department: '消化内科',
+    recommendedTests: ['C13/C14呼气试验', '胃镜', '胃功能三项', '血常规'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '情绪与胃密切相关。保持心情舒畅对胃病康复至关重要。避免焦虑和紧张。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['小米粥、山药粥', '蒸蛋、鱼肉', '南瓜、胡萝卜', '面条'], avoid: ['辛辣刺激食物', '过冷过热的食物', '浓茶、咖啡', '暴饮暴食', '油炸食品'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '饭后不宜立即运动，休息30-60分钟。推荐散步、八段锦。避免剧烈运动。' },
+      environment: { icon: '🌿', title: '环境调节', content: '注意饮食卫生，Hp可通过口-口传播。分餐制有助于预防Hp感染。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '建议左侧卧位（减少胃酸反流）。晚餐不宜过饱，睡前3小时不进食。' }
+    }
+  },
+  '脂肪肝': {
+    icon: '🫁', 
+    cause: '非酒精性脂肪肝与肥胖、胰岛素抵抗、高脂血症相关。酒精性脂肪肝由长期饮酒引起。', 
+    mechanism: '肝细胞内甘油三酯蓄积超过肝脏脂质代谢能力，可进展为脂肪性肝炎、肝硬化。', 
+    diagnosis: '腹部B超为首选筛查。肝功能ALT/AST升高提示炎症。FibroScan评估肝纤维化。', 
+    treatment: '核心治疗为生活方式干预：减重5-10%可显著改善。戒酒（酒精性）。保肝药物辅助。', 
+    tcm: '肝郁脾虚型（逍遥散）、痰湿内阻型（二陈汤合四逆散）、湿热蕴结型（茵陈蒿汤）。',
+    department: '消化内科/肝病科',
+    recommendedTests: ['肝功能', '腹部B超', 'FibroScan', '血脂', '血糖', '乙肝五项'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '脂肪肝是可逆的，建立信心。设定合理的减重目标。避免过度焦虑。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['燕麦、糙米', '深海鱼、鸡胸肉', '大量蔬菜', '绿茶', '豆制品'], avoid: ['酒精', '肥肉、油炸食品', '含糖饮料', '过量水果', '精制碳水'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '有氧运动+抗阻训练结合。有氧：快走、慢跑、游泳，每周150分钟以上。' },
+      environment: { icon: '🌿', title: '环境调节', content: '减少接触肝毒性物质。避免久坐，每小时起身活动。避免滥用药物。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '保证充足睡眠有助于肝脏修复。建议每晚7-8小时。避免熬夜。' }
+    }
+  },
+  '胃溃疡': {
+    icon: '🔥', 
+    cause: '幽门螺杆菌感染、长期服用NSAIDs、应激、吸烟、遗传因素。', 
+    mechanism: '胃酸和胃蛋白酶对胃黏膜的自身消化，黏膜防御屏障受损。', 
+    diagnosis: '胃镜检查为金标准。Hp检测。需与胃癌鉴别。', 
+    treatment: 'Hp阳性：根除治疗。PPI抑酸治疗4-8周。胃黏膜保护剂。避免NSAIDs。', 
+    tcm: '肝胃不和型（柴胡疏肝散）、脾胃虚寒型（黄芪建中汤）、胃阴不足型（一贯煎）。',
+    department: '消化内科',
+    recommendedTests: ['胃镜', 'C13/C14呼气试验', '胃功能三项', '血常规', '大便潜血'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '保持情绪稳定，避免焦虑紧张。精神压力可加重溃疡。规律生活。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['易消化食物', '小米粥', '蒸蛋', '瘦肉', '新鲜蔬菜'], avoid: ['辛辣刺激食物', '浓茶、咖啡', '酒精', '过酸食物', '油炸食品'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '适度运动有益。避免饭后立即运动。避免剧烈运动。' },
+      environment: { icon: '🌿', title: '环境调节', content: '规律进餐，细嚼慢咽。避免暴饮暴食。戒烟。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '规律作息，避免熬夜。保证充足睡眠有助于溃疡愈合。' }
+    }
+  },
+  '肠易激综合征': {
+    icon: '🌀', 
+    cause: '胃肠动力异常、内脏高敏感、肠道菌群失调、精神心理因素、饮食因素。', 
+    mechanism: '脑-肠轴功能紊乱，导致腹痛、腹胀、排便习惯改变。', 
+    diagnosis: '罗马IV诊断标准：反复发作的腹痛，与排便相关，伴排便习惯改变。需排除器质性疾病。', 
+    treatment: '饮食调整、益生菌、解痉药、止泻/通便药、抗焦虑抑郁药（必要时）。', 
+    tcm: '肝郁脾虚型（痛泻要方）、脾胃虚弱型（参苓白术散）、脾肾阳虚型（四神丸）。',
+    department: '消化内科',
+    recommendedTests: ['大便常规+潜血', '肠镜（必要时）', '腹部B超', '甲状腺功能'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: 'IBS与情绪密切相关。学会压力管理，放松训练。必要时寻求心理帮助。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['低FODMAP饮食', '可溶性纤维', '充足饮水', '规律进餐'], avoid: ['产气食物', '高FODMAP食物', '乳制品（如不耐受）', '咖啡因', '酒精'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '适度有氧运动有助于改善症状。推荐散步、瑜伽、太极拳。' },
+      environment: { icon: '🌿', title: '环境调节', content: '记录饮食日记，识别诱发因素。保持规律作息。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '保证充足睡眠。睡眠不足可加重症状。规律作息。' }
+    }
+  },
+  '胆囊炎': {
+    icon: '🫀', 
+    cause: '胆囊结石最常见（90%以上）。其他：细菌感染、胆汁淤积、胆囊缺血。', 
+    mechanism: '胆囊管梗阻导致胆汁淤积、胆囊壁炎症，严重时可化脓、穿孔。', 
+    diagnosis: '右上腹痛、发热、Murphy征阳性。腹部超声示胆囊壁增厚、胆囊结石。', 
+    treatment: '急性期：禁食、抗感染、解痉止痛。反复发作者行胆囊切除术。', 
+    tcm: '肝胆湿热型（龙胆泻肝汤）、肝郁气滞型（柴胡疏肝散）、脓毒内蕴型（黄连解毒汤）。',
+    department: '肝胆外科/消化内科',
+    recommendedTests: ['腹部超声', '肝功能', '血常规', '血淀粉酶', 'MRCP（必要时）'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '保持情绪稳定，避免焦虑。急性期需及时就医。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['低脂饮食', '清淡易消化食物', '充足饮水', '蔬菜水果'], avoid: ['高脂肪食物', '油炸食品', '蛋黄', '动物内脏', '酒精'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '急性期卧床休息。恢复期适度运动。避免剧烈运动。' },
+      environment: { icon: '🌿', title: '环境调节', content: '规律进餐，避免暴饮暴食。控制体重，避免快速减重。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '保证充足睡眠。规律作息有助于胆汁排泄。' }
+    }
+  },
+  '胰腺炎': {
+    icon: '🔥', 
+    cause: '胆石症最常见（我国），酒精是西方常见原因。其他：高脂血症、ERCP术后、药物。', 
+    mechanism: '胰酶在胰腺内被激活，导致胰腺自身消化和炎症反应。', 
+    diagnosis: '上腹痛、恶心呕吐、血淀粉酶/脂肪酶升高（>3倍正常值）。腹部CT评估严重程度。', 
+    treatment: '急性期：禁食、补液、镇痛、抑制胰酶分泌。重症需ICU监护。慢性：戒酒、低脂饮食、胰酶替代。', 
+    tcm: '肝胆湿热型（龙胆泻肝汤）、脾胃实热型（大承气汤）、蛔虫上扰型（乌梅丸）。',
+    department: '消化内科/肝胆外科',
+    recommendedTests: ['血淀粉酶', '脂肪酶', '腹部CT', '肝功能', '血脂', '血钙'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '急性胰腺炎需及时就医。慢性胰腺炎需长期管理，保持积极心态。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['低脂饮食', '清淡易消化食物', '少量多餐', '充足饮水'], avoid: ['酒精（绝对禁忌）', '高脂肪食物', '油炸食品', '暴饮暴食', '浓肉汤'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '急性期绝对卧床休息。恢复期逐步恢复活动。' },
+      environment: { icon: '🌿', title: '环境调节', content: '戒酒是预防复发的关键。控制血脂。治疗胆石症。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '保证充足睡眠。规律作息。避免熬夜。' }
+    }
+  },
+
+  // ===== 呼吸系统 =====
+  '哮喘': {
+    icon: '🌬️', 
+    cause: '遗传易感性+环境因素（过敏原、感染、运动、冷空气、药物等）。', 
+    mechanism: '气道慢性炎症导致气道高反应性和可逆性气流受限。', 
+    diagnosis: '反复发作性喘息、咳嗽、胸闷。肺功能检查示可逆性气流受限。支气管激发试验。', 
+    treatment: '控制药物：ICS、LABA、白三烯受体拮抗剂。缓解药物：SABA。重度可考虑生物制剂。', 
+    tcm: '发作期：寒哮（射干麻黄汤）、热哮（定喘汤）。缓解期：肺脾气虚（六君子汤）、肺肾两虚（金水六君煎）。',
+    department: '呼吸内科',
+    recommendedTests: ['肺功能', '支气管激发/舒张试验', '过敏原检测', 'FeNO', '胸部CT'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '哮喘发作时保持冷静，焦虑会加重症状。学会正确使用吸入器。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['富含维生素C的食物', '深海鱼', '新鲜蔬果', '充足饮水'], avoid: ['已知过敏食物', '过冷过热食物', '可能诱发过敏的食物'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '运动性哮喘需运动前用药。游泳是较好的运动选择。避免寒冷干燥环境下剧烈运动。' },
+      environment: { icon: '🌿', title: '环境调节', content: '避免接触过敏原。保持室内清洁，定期清洗床单。使用空气净化器。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '夜间哮喘需调整用药时间。抬高床头可减轻症状。避免睡前接触过敏原。' }
+    }
+  },
+  '慢性支气管炎': {
+    icon: '🫁', 
+    cause: '吸烟是最主要原因。其他：空气污染、职业粉尘、反复呼吸道感染、遗传。', 
+    mechanism: '气管支气管黏膜慢性炎症，黏液分泌增多，纤毛功能受损。', 
+    diagnosis: '咳嗽咳痰每年持续3个月以上，连续2年。需排除其他肺部疾病。肺功能检查评估有无COPD。', 
+    treatment: '戒烟是关键。急性加重期抗感染、祛痰、平喘。稳定期可使用支气管扩张剂。', 
+    tcm: '痰湿蕴肺型（二陈汤合三子养亲汤）、痰热郁肺型（清金化痰汤）、肺肾气虚型（补肺汤合肾气丸）。',
+    department: '呼吸内科',
+    recommendedTests: ['肺功能', '胸部CT', '血常规', '痰培养', '动脉血气'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '戒烟是改善预后的最重要措施。保持积极心态，配合治疗。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['富含维生素A、C的食物', '百合、梨', '白萝卜', '充足饮水'], avoid: ['吸烟', '辛辣刺激食物', '过咸食物', '冷饮'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '呼吸功能锻炼：腹式呼吸、缩唇呼吸。适度有氧运动。避免寒冷环境下运动。' },
+      environment: { icon: '🌿', title: '环境调节', content: '戒烟并避免二手烟。保持室内空气清新。避免空气污染严重时外出。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '保证充足睡眠。夜间咳嗽明显者可抬高床头。' }
+    }
+  },
+  '过敏性鼻炎': {
+    icon: '🤧', 
+    cause: '遗传易感性+环境过敏原（尘螨、花粉、动物皮屑、霉菌等）。', 
+    mechanism: 'IgE介导的鼻黏膜I型变态反应，导致鼻痒、喷嚏、流涕、鼻塞。', 
+    diagnosis: '典型症状+过敏原检测阳性。鼻内镜检查。需与血管运动性鼻炎鉴别。', 
+    treatment: '避免过敏原。药物治疗：鼻用激素、抗组胺药、白三烯受体拮抗剂。免疫治疗。', 
+    tcm: '肺气虚寒型（温肺止流丹）、脾气虚弱型（补中益气汤）、肾阳不足型（金匮肾气丸）。',
+    department: '耳鼻喉科/变态反应科',
+    recommendedTests: ['过敏原检测', '鼻内镜', '血清总IgE', '鼻分泌物涂片'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '过敏性鼻炎影响生活质量，需规范治疗。避免焦虑情绪。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['富含维生素C的食物', '深海鱼', '新鲜蔬果'], avoid: ['已知过敏食物', '辛辣刺激食物', '冷饮'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '适度运动增强体质。花粉季节避免户外运动。游泳需注意泳池消毒剂刺激。' },
+      environment: { icon: '🌿', title: '环境调节', content: '避免接触过敏原。定期清洗床单被罩。使用空气净化器和除螨仪。花粉季节关窗。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '鼻塞影响睡眠时可使用鼻喷剂。保持卧室清洁无尘螨。' }
+    }
+  },
+  '肺炎': {
+    icon: '🦠', 
+    cause: '细菌（肺炎链球菌最常见）、病毒、支原体、衣原体、真菌等感染。', 
+    mechanism: '病原体侵入肺部引起肺泡和间质炎症，影响气体交换。', 
+    diagnosis: '发热、咳嗽、咳痰、胸痛。胸部影像学示肺部浸润影。病原学检查。', 
+    treatment: '根据病原体选择抗感染药物。对症支持治疗。重症需住院治疗。', 
+    tcm: '风热犯肺型（银翘散）、痰热壅肺型（麻杏石甘汤合千金苇茎汤）、气阴两虚型（竹叶石膏汤）。',
+    department: '呼吸内科/感染科',
+    recommendedTests: ['胸部CT/X线', '血常规', 'CRP/PCT', '痰培养', '病原学检测'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '肺炎需及时规范治疗。保持积极心态，配合治疗。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['易消化高蛋白食物', '充足饮水', '新鲜蔬果', '清淡饮食'], avoid: ['辛辣刺激食物', '油腻食物', '酒精'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '急性期卧床休息。恢复期逐步恢复活动。康复后适度运动增强体质。' },
+      environment: { icon: '🌿', title: '环境调节', content: '保持室内通风。避免去人群密集场所。注意个人卫生。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '保证充足睡眠有助于恢复。高热时多休息。' }
+    }
+  },
+
+  // ===== 神经系统 =====
+  '失眠': {
+    icon: '🌙', 
+    cause: '心理因素（焦虑、抑郁）、生活不规律、环境因素、药物副作用、躯体疾病。', 
+    mechanism: '睡眠-觉醒周期失调，大脑皮层兴奋性增高，褪黑素分泌异常。', 
+    diagnosis: '入睡困难、睡眠维持困难、早醒，每周≥3次，持续≥3个月，影响日间功能。', 
+    treatment: '失眠认知行为疗法(CBT-I)为一线治疗。药物：苯二氮卓类、Z类药物、褪黑素受体激动剂。', 
+    tcm: '心脾两虚型（归脾汤）、肝火扰心型（龙胆泻肝汤）、心肾不交型（六味地黄丸合交泰丸）。',
+    department: '神经内科/睡眠医学科',
+    recommendedTests: ['睡眠日记', 'PSG（多导睡眠图）', '焦虑抑郁量表', '甲状腺功能'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '睡前进行放松训练：渐进性肌肉放松、腹式呼吸。建立"睡前仪式感"。不要过度关注睡眠。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['温牛奶', '香蕉、燕麦、核桃', '百合、莲子', '酸枣仁粥', '樱桃'], avoid: ['下午3点后咖啡因', '睡前饮酒', '辛辣刺激食物', '睡前过饱'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '规律运动改善睡眠质量，但避免睡前3小时剧烈运动。推荐太极拳、八段锦、瑜伽。' },
+      environment: { icon: '🌿', title: '环境调节', content: '卧室温度18-22°C最佳。使用遮光窗帘。保持安静。床垫枕头舒适。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '固定作息时间。床只用来睡觉。20分钟睡不着就起床做放松活动。避免日间过长午睡。' }
+    }
+  },
+  '偏头痛': {
+    icon: '🤕', 
+    cause: '遗传因素、神经血管调节异常、三叉神经血管系统激活。诱因：压力、睡眠不足、饮食、激素变化。', 
+    mechanism: '颅内血管舒缩功能障碍，三叉神经末梢释放炎性介质，导致头痛。', 
+    diagnosis: '反复发作的单侧搏动性头痛，持续4-72小时，伴恶心/呕吐、畏光畏声。', 
+    treatment: '急性期：NSAIDs、曲普坦类。预防性：β阻滞剂、钙通道阻滞剂、抗癫痫药。', 
+    tcm: '肝阳上亢型（天麻钩藤饮）、痰浊上扰型（半夏白术天麻汤）、瘀阻脑络型（通窍活血汤）。',
+    department: '神经内科',
+    recommendedTests: ['头颅CT/MRI（排除继发性）', '脑电图', '经颅多普勒'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '识别并避免诱发因素。学会压力管理。保持情绪稳定。记录头痛日记。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['规律进餐', '充足饮水', '富含镁的食物'], avoid: ['酒精（尤其红酒）', '陈年奶酪', '巧克力', '咖啡因（过量或戒断）', '含味精食物'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '规律适度运动有助于预防偏头痛。避免剧烈运动诱发。推荐瑜伽、太极拳。' },
+      environment: { icon: '🌿', title: '环境调节', content: '避免强光、噪音刺激。保持规律作息。避免睡眠不足或过多。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '保持规律睡眠时间。睡眠不足或过多都可诱发偏头痛。' }
+    }
+  },
+  '癫痫': {
+    icon: '⚡', 
+    cause: '遗传性、结构性（脑肿瘤、脑血管病、脑外伤）、感染性、代谢性、免疫性。', 
+    mechanism: '大脑神经元异常同步放电，导致短暂性脑功能障碍。', 
+    diagnosis: '至少2次非诱发性发作间隔>24小时，或1次发作+脑电图异常+高复发风险。', 
+    treatment: '抗癫痫药物（根据发作类型选择）。药物难治性癫痫可考虑手术、VNS、生酮饮食。', 
+    tcm: '风痰闭阻型（定痫丸）、痰火扰神型（龙胆泻肝汤合涤痰汤）、心脾两虚型（归脾汤）。',
+    department: '神经内科',
+    recommendedTests: ['脑电图', '头颅MRI', '血常规', '肝功能', '抗癫痫药物血药浓度'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '正确认识癫痫，规范服药。避免焦虑和自卑。告知亲友发作时的处理方法。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['均衡饮食', '生酮饮食（药物难治性）', '充足饮水'], avoid: ['酒精', '过量咖啡因', '暴饮暴食', '可能影响药物代谢的食物'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '适度运动有益。避免独自游泳、攀高、驾驶。避免过度疲劳。' },
+      environment: { icon: '🌿', title: '环境调节', content: '避免闪光刺激。保持规律作息。避免睡眠不足。随身携带病情卡。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '保证充足睡眠。睡眠不足可诱发发作。规律作息。' }
+    }
+  },
+  '帕金森病': {
+    icon: '🧓', 
+    cause: '黑质多巴胺能神经元变性死亡，病因包括遗传、环境毒素、老化等。', 
+    mechanism: '黑质-纹状体多巴胺能通路受损，导致运动障碍。', 
+    diagnosis: '运动症状：静止性震颤、肌强直、运动迟缓、姿势步态异常。需排除继发性帕金森综合征。', 
+    treatment: '药物：左旋多巴、多巴胺受体激动剂、MAO-B抑制剂等。手术：DBS。康复训练。', 
+    tcm: '气血亏虚型（八珍汤）、肝肾阴虚型（大定风珠）、痰热风动型（导痰汤合天麻钩藤饮）。',
+    department: '神经内科',
+    recommendedTests: ['头颅MRI', 'DAT-SPECT', 'UPDRS评分', '认知功能评估'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '帕金森病需长期管理，保持积极心态。家属支持很重要。参加病友互助团体。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['富含纤维的食物', '充足饮水', '优质蛋白（与服药时间错开）'], avoid: ['高蛋白饮食影响左旋多巴吸收', '便秘加重因素'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '规律运动可改善症状。推荐太极拳、舞蹈、步行。进行平衡和柔韧性训练。' },
+      environment: { icon: '🌿', title: '环境调节', content: '居家环境防跌倒：移除地毯、安装扶手。穿防滑鞋。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '帕金森患者常有睡眠障碍。规律作息。必要时调整药物时间。' }
+    }
+  },
+
+  // ===== 骨骼肌肉系统 =====
+  '颈椎病': {
+    icon: '🦴', 
+    cause: '长期伏案工作、低头使用手机、不良姿势、缺乏运动、颈椎退行性变。', 
+    mechanism: '颈椎间盘退变、椎体骨质增生导致神经、脊髓或血管压迫。', 
+    diagnosis: '分型：颈型、神经根型、脊髓型、椎动脉型、交感型。X线、CT、MRI辅助诊断。', 
+    treatment: '保守治疗为主：颈椎牵引、理疗、手法治疗、药物治疗。脊髓型需手术。', 
+    tcm: '风寒湿痹型（葛根汤）、气滞血瘀型（身痛逐瘀汤）、肝肾不足型（独活寄生汤）。',
+    department: '骨科/康复科',
+    recommendedTests: ['颈椎X线', '颈椎MRI', '肌电图', 'TCD'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '颈椎病多为慢性过程，需耐心。避免焦虑加重肌肉紧张。坚持康复锻炼。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['富含钙质食物', '深海鱼', '新鲜蔬果', '坚果、黑芝麻'], avoid: ['高糖高脂饮食', '过量咖啡因', '酒精'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '八段锦"五劳七伤往后瞧"式对颈椎极好。游泳（蛙泳）锻炼颈背肌。颈椎操每天做。' },
+      environment: { icon: '🌿', title: '环境调节', content: '电脑屏幕与眼睛平齐。使用有头枕的座椅。选择合适高度的枕头。避免长时间低头。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '选择合适的颈椎保健枕。仰卧时枕头支撑颈曲。避免俯卧位。' }
+    }
+  },
+  '腰椎间盘突出': {
+    icon: '🔙', 
+    cause: '腰椎间盘退变、外伤、长期弯腰负重、久坐、肥胖、遗传因素。', 
+    mechanism: '纤维环破裂，髓核突出压迫神经根或马尾神经，导致腰腿痛。', 
+    diagnosis: '腰痛伴下肢放射痛、麻木。直腿抬高试验阳性。腰椎MRI为首选影像学检查。', 
+    treatment: '保守治疗：卧床休息、药物、理疗、牵引。手术治疗：椎间盘切除术、融合术。', 
+    tcm: '气滞血瘀型（身痛逐瘀汤）、寒湿阻络型（独活寄生汤）、肝肾亏虚型（补肾壮筋汤）。',
+    department: '骨科/脊柱外科',
+    recommendedTests: ['腰椎MRI', '腰椎CT', '肌电图', '骨密度'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '腰椎间盘突出需长期管理，保持积极心态。避免恐惧心理影响康复。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['富含钙和维生素D的食物', '优质蛋白', '新鲜蔬果（预防便秘）'], avoid: ['高糖高脂饮食', '肥胖加重腰椎负担'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '急性期卧床休息。恢复期进行腰背肌锻炼（小燕飞、五点支撑）。游泳是很好的康复运动。' },
+      environment: { icon: '🌿', title: '环境调节', content: '避免久坐，每小时起身活动。搬重物时屈膝下蹲。选择硬板床或支撑性好的床垫。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '选择支撑性好的床垫。侧卧时双腿间夹枕头。仰卧时膝下垫枕头。' }
+    }
+  },
+  '骨质疏松': {
+    icon: '🦴', 
+    cause: '雌激素减少（绝经后）、老龄化、钙摄入不足、缺乏运动、糖皮质激素使用、继发性疾病。', 
+    mechanism: '骨吸收大于骨形成，骨量减少，骨微结构破坏，脆性骨折风险增加。', 
+    diagnosis: '骨密度检查（DXA）：T值≤-2.5为骨质疏松。脆性骨折史可直接诊断。', 
+    treatment: '基础治疗：钙剂+维生素D。抗骨质疏松药：双膦酸盐、降钙素、雌激素、SERMs、地舒单抗。', 
+    tcm: '肾精不足型（左归丸）、脾肾阳虚型（右归丸）、肝肾阴虚型（虎潜丸）。',
+    department: '内分泌科/骨科',
+    recommendedTests: ['骨密度（DXA）', '骨代谢标志物', '血钙磷', '甲状旁腺激素', '25-OH维生素D'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '骨质疏松可防可治，保持积极心态。坚持规范治疗，定期复查骨密度。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['奶制品', '豆制品', '深绿色蔬菜', '小鱼小虾', '坚果'], avoid: ['过量咖啡', '浓茶', '碳酸饮料', '高盐饮食', '酒精'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '负重运动和抗阻训练有助于增加骨密度。散步、慢跑、太极拳。避免跌倒。' },
+      environment: { icon: '🌿', title: '环境调节', content: '居家防跌倒：移除地毯、安装扶手、保持照明充足。穿防滑鞋。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '保证充足睡眠。选择支撑性好的床垫。' }
+    }
+  },
+  '类风湿关节炎': {
+    icon: '🦵', 
+    cause: '自身免疫性疾病，遗传易感性+环境因素（感染、吸烟等）。', 
+    mechanism: '滑膜炎和血管翳形成，导致关节软骨和骨质破坏，关节畸形。', 
+    diagnosis: '关节肿痛、晨僵>1小时、RF或抗CCP抗体阳性、X线示关节侵蚀。', 
+    treatment: 'DMARDs（甲氨蝶呤、来氟米特等）为基石。生物制剂、JAK抑制剂。NSAIDs对症。', 
+    tcm: '风寒湿痹型（蠲痹汤）、风湿热痹型（白虎加桂枝汤）、痰瘀痹阻型（双合汤）。',
+    department: '风湿免疫科',
+    recommendedTests: ['RF', '抗CCP抗体', 'ESR/CRP', '关节超声', '关节X线/MRI'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '类风湿需长期规范治疗，保持积极心态。家属支持很重要。避免焦虑和抑郁。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['地中海饮食', '富含Omega-3的食物', '新鲜蔬果', '充足饮水'], avoid: ['可能诱发炎症的食物', '高糖饮食', '加工食品'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '适度运动保持关节活动度。急性期休息。缓解期进行关节功能锻炼。避免过度使用关节。' },
+      environment: { icon: '🌿', title: '环境调节', content: '注意关节保暖，避免寒冷潮湿环境。使用辅助器具减少关节负担。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '保证充足睡眠。选择合适的枕头和床垫。关节疼痛影响睡眠时告知医生。' }
+    }
+  },
+
+  // ===== 精神心理 =====
+  '焦虑症': {
+    icon: '😰', 
+    cause: '遗传易感性、心理社会因素、神经生物学因素失调（GABA、5-HT、NE）。', 
+    mechanism: '杏仁核过度激活，前额叶皮层调控功能减弱，导致过度担忧和警觉。', 
+    diagnosis: '过度焦虑和担忧≥6个月，伴≥3项症状（坐立不安、疲劳、注意力不集中、易激惹、肌肉紧张、睡眠障碍）。', 
+    treatment: '一线：SSRI或SNRI。心理治疗：认知行为疗法(CBT)。苯二氮卓类短期使用。', 
+    tcm: '心胆气虚型（安神定志丸）、肝郁化火型（丹栀逍遥散）、痰热扰心型（黄连温胆汤）。',
+    department: '精神科/心理科',
+    recommendedTests: ['HAMA焦虑量表', 'SAS焦虑自评量表', '甲状腺功能', '心电图'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '学习认知重构，识别自动化负面思维。正念冥想每天10-20分钟。接受专业治疗。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['富含Omega-3的食物', '发酵食品', '绿叶蔬菜、香蕉', '洋甘菊茶', '坚果'], avoid: ['过量咖啡因', '酒精', '高糖食品', '加工食品'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '运动是天然的抗焦虑药。有氧运动每周150分钟。推荐太极拳、瑜伽。' },
+      environment: { icon: '🌿', title: '环境调节', content: '减少信息过载，限制刷手机时间。接触自然环境。保持社交活动。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '建立固定的睡前放松程序。4-7-8呼吸法助眠。避免睡前刷手机。' }
+    }
+  },
+  '抑郁症': {
+    icon: '😔', 
+    cause: '遗传因素、神经生物学异常（5-HT、NE、DA失衡）、心理社会因素。', 
+    mechanism: '大脑神经递质失衡，海马体萎缩，神经可塑性下降。', 
+    diagnosis: '核心症状：情绪低落、兴趣减退、精力下降，持续≥2周。伴睡眠、食欲、认知改变。', 
+    treatment: '一线：SSRI。心理治疗：CBT、IPT。严重者可考虑电休克治疗(ECT)。', 
+    tcm: '肝郁脾虚型（逍遥散）、心脾两虚型（归脾汤）、肝肾阴虚型（滋水清肝饮）。',
+    department: '精神科/心理科',
+    recommendedTests: ['HAMD抑郁量表', 'SDS抑郁自评量表', '甲状腺功能', '心电图'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '接受专业治疗，不要独自承受。建立规律作息，设定小目标。寻求家人朋友支持。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['富含Omega-3的食物', '深色绿叶蔬菜', '全谷物', '优质蛋白', '发酵食品'], avoid: ['酒精', '过量咖啡因', '高糖食品', '加工食品'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '适度运动可改善情绪。从轻度运动开始，如散步、瑜伽。逐步增加运动量。' },
+      environment: { icon: '🌿', title: '环境调节', content: '保持居住环境明亮、整洁。增加自然光照。养植物或宠物。保持社交活动。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '建立规律作息，避免熬夜。如有睡眠问题，及时告知医生调整治疗。' }
+    }
+  },
+  '强迫症': {
+    icon: '🔄', 
+    cause: '遗传因素、神经生物学异常（5-HT系统）、心理因素（完美主义、责任感过强）。', 
+    mechanism: '皮质-纹状体-丘脑-皮质环路功能异常，导致强迫思维和行为。', 
+    diagnosis: '强迫思维和/或强迫行为，耗时>1小时/天，导致明显痛苦或功能损害。', 
+    treatment: '一线：SSRI（高剂量）。心理治疗：暴露反应预防(ERP)。难治性可考虑DBS。', 
+    tcm: '肝郁化火型（丹栀逍遥散）、心脾两虚型（归脾汤）、阴虚火旺型（知柏地黄丸）。',
+    department: '精神科/心理科',
+    recommendedTests: ['Y-BOCS量表', 'HAMA/HAMD', '甲状腺功能'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '接受专业治疗，坚持ERP练习。学会接纳不确定性。不要与强迫思维对抗。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['均衡饮食', '富含5-HT前体的食物', '充足饮水'], avoid: ['酒精', '过量咖啡因', '可能影响药物的食物'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '规律运动有助于减轻焦虑。有氧运动每周150分钟。推荐瑜伽、太极拳。' },
+      environment: { icon: '🌿', title: '环境调节', content: '减少诱发强迫的因素。逐步面对恐惧情境（在治疗师指导下）。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '保证充足睡眠。睡眠不足可加重强迫症状。规律作息。' }
+    }
+  },
+
+  // ===== 泌尿系统 =====
+  '慢性肾病': {
+    icon: '🫘', 
+    cause: '糖尿病肾病、高血压肾病、慢性肾小球肾炎、多囊肾、梗阻性肾病等。', 
+    mechanism: '肾单位进行性破坏，肾功能下降，代谢废物蓄积，水电解质紊乱。', 
+    diagnosis: '肾损害≥3个月，伴或不伴GFR下降。GFR<60ml/min/1.73m²≥3个月。', 
+    treatment: '控制血压、血糖。ACEI/ARB。低蛋白饮食。纠正贫血、钙磷代谢紊乱。透析或移植。', 
+    tcm: '脾肾气虚型（参苓白术散）、肝肾阴虚型（六味地黄丸）、脾肾阳虚型（真武汤）。',
+    department: '肾内科',
+    recommendedTests: ['肾功能', '尿常规', '尿微量白蛋白/肌酐比值', '肾脏超声', 'eGFR', '电解质'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '慢性肾病需长期管理，保持积极心态。配合治疗可延缓进展。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['优质低蛋白饮食', '低盐饮食', '控制钾磷摄入'], avoid: ['高盐食物', '高钾食物（香蕉、橙子等）', '高磷食物', '高蛋白饮食'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '适度运动有益。避免剧烈运动。根据肾功能调整运动强度。' },
+      environment: { icon: '🌿', title: '环境调节', content: '避免肾毒性药物（NSAIDs等）。预防感染。定期复查。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '保证充足睡眠。规律作息。' }
+    }
+  },
+  '肾结石': {
+    icon: '💎', 
+    cause: '饮水不足、高钙高草酸饮食、尿路感染、代谢异常（高尿酸、高钙尿）、遗传因素。', 
+    mechanism: '尿液中某些成分过饱和析出结晶，逐渐形成结石。', 
+    diagnosis: '腰腹痛、血尿。泌尿系超声、CT为首选检查。结石成分分析。', 
+    treatment: '小于6mm可保守排石。体外冲击波碎石。输尿管镜/经皮肾镜取石。预防复发。', 
+    tcm: '湿热蕴结型（八正散）、气滞血瘀型（少腹逐瘀汤）、肾气不足型（济生肾气丸）。',
+    department: '泌尿外科',
+    recommendedTests: ['泌尿系超声', '泌尿系CT', '尿常规', '肾功能', '血钙磷尿酸'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '肾结石易复发，需长期预防。保持积极心态，配合治疗。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['大量饮水（2000-3000ml/天）', '柠檬水', '低钠饮食'], avoid: ['高草酸食物（菠菜、浓茶）', '高嘌呤食物', '高盐饮食', '过量动物蛋白'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '适度运动有助于小结石排出。跳跃运动可能帮助排石。' },
+      environment: { icon: '🌿', title: '环境调节', content: '避免久坐。保持充足饮水习惯。定期复查。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '保证充足睡眠。睡前适量饮水。' }
+    }
+  },
+  '前列腺炎': {
+    icon: '🚹', 
+    cause: '细菌感染（急性）、盆底肌肉功能紊乱、免疫因素、心理因素（慢性）。', 
+    mechanism: '前列腺炎症反应，导致盆腔疼痛和下尿路症状。', 
+    diagnosis: '尿频、尿急、会阴部疼痛。前列腺液检查。尿常规。排除其他疾病。', 
+    treatment: '抗生素（细菌性）、α受体阻滞剂、非甾体抗炎药、物理治疗、心理治疗。', 
+    tcm: '湿热下注型（八正散）、气滞血瘀型（前列腺汤）、肾虚型（知柏地黄丸）。',
+    department: '泌尿外科',
+    recommendedTests: ['尿常规', '前列腺液常规', '泌尿系超声', '尿培养'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '慢性前列腺炎与心理因素相关，保持良好心态。避免焦虑。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['充足饮水', '新鲜蔬果', '富含锌的食物'], avoid: ['酒精', '辛辣刺激食物', '咖啡因', '久坐'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '适度运动有益。避免长时间骑车。推荐散步、游泳。' },
+      environment: { icon: '🌿', title: '环境调节', content: '避免久坐，每小时起身活动。保持规律排精。避免憋尿。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '保证充足睡眠。规律作息。' }
+    }
+  },
+
+  // ===== 皮肤科 =====
+  '湿疹': {
+    icon: '🔴', 
+    cause: '遗传易感性、皮肤屏障功能障碍、免疫异常、环境因素（过敏原、刺激物）。', 
+    mechanism: '皮肤屏障受损，炎症细胞浸润，导致红斑、丘疹、水疱、渗出、瘙痒。', 
+    diagnosis: '皮损形态多样，对称分布，瘙痒明显，反复发作。需与接触性皮炎、银屑病鉴别。', 
+    treatment: '保湿剂修复皮肤屏障。外用糖皮质激素、钙调神经磷酸酶抑制剂。抗组胺药止痒。', 
+    tcm: '湿热浸淫型（龙胆泻肝汤）、脾虚湿蕴型（除湿胃苓汤）、血虚风燥型（当归饮子）。',
+    department: '皮肤科',
+    recommendedTests: ['过敏原检测', '血常规（嗜酸性粒细胞）', '血清总IgE', '皮肤斑贴试验'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '湿疹反复发作影响生活质量，保持耐心。避免搔抓，控制瘙痒-搔抓循环。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['清淡饮食', '新鲜蔬果', '充足饮水'], avoid: ['已知过敏食物', '辛辣刺激食物', '酒精', '海鲜（如过敏）'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '适度运动有益。避免出汗过多刺激皮肤。运动后及时清洁。' },
+      environment: { icon: '🌿', title: '环境调节', content: '避免接触过敏原和刺激物。保持室内适宜湿度。选择棉质衣物。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '瘙痒影响睡眠时可使用抗组胺药。保持卧室凉爽。剪短指甲避免搔抓。' }
+    }
+  },
+  '银屑病': {
+    icon: '🧩', 
+    cause: '遗传因素、免疫异常（Th17通路）、环境因素（感染、创伤、药物、压力）。', 
+    mechanism: '角质形成细胞过度增殖和分化异常，炎症细胞浸润，形成银白色鳞屑性斑块。', 
+    diagnosis: '典型皮损：红色斑块上覆银白色鳞屑，好发于头皮、肘膝、腰骶部。Auspitz征阳性。', 
+    treatment: '外用：糖皮质激素、维生素D3衍生物、他扎罗汀。光疗。系统治疗：甲氨蝶呤、生物制剂。', 
+    tcm: '血热内蕴型（犀角地黄汤）、血虚风燥型（当归饮子）、瘀滞肌肤型（桃红四物汤）。',
+    department: '皮肤科',
+    recommendedTests: ['皮肤病理（必要时）', '血常规', '肝功能', '自身抗体'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '银屑病是慢性病，需长期管理。保持积极心态，避免精神压力诱发加重。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['地中海饮食', '富含Omega-3的食物', '新鲜蔬果'], avoid: ['酒精', '吸烟', '高糖高脂饮食', '可能诱发加重的食物'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '适度运动有益。避免皮肤损伤（同形反应）。运动后注意皮肤护理。' },
+      environment: { icon: '🌿', title: '环境调节', content: '避免皮肤干燥，使用保湿剂。避免感染。避免某些药物（β阻滞剂、锂剂等）。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '保证充足睡眠。睡眠不足可诱发加重。' }
+    }
+  },
+  '痤疮': {
+    icon: '🔴', 
+    cause: '雄激素水平、皮脂分泌过多、毛囊角化过度、痤疮丙酸杆菌感染、遗传因素。', 
+    mechanism: '毛囊皮脂腺导管角化异常，皮脂淤积，细菌繁殖，炎症反应。', 
+    diagnosis: '粉刺、丘疹、脓疱、结节、囊肿，好发于面部、胸背部。根据严重程度分级。', 
+    treatment: '外用：维A酸类、过氧化苯甲酰、抗生素。口服：抗生素、异维A酸、抗雄激素。', 
+    tcm: '肺经风热型（枇杷清肺饮）、湿热蕴结型（茵陈蒿汤）、痰瘀互结型（海藻玉壶汤）。',
+    department: '皮肤科',
+    recommendedTests: ['性激素六项（女性）', '皮肤镜', '细菌培养（必要时）'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '痤疮影响外观和心理健康，保持积极心态。避免焦虑。不要过度关注。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['低GI饮食', '富含锌的食物', '新鲜蔬果', '充足饮水'], avoid: ['高糖食物', '乳制品（部分）', '油炸食品', '辛辣刺激食物'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '适度运动有益。运动后及时清洁面部。避免长时间带妆运动。' },
+      environment: { icon: '🌿', title: '环境调节', content: '保持面部清洁，但不要过度清洁。避免挤压痘痘。选择非致痘性护肤品。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '保证充足睡眠。熬夜可加重痤疮。规律作息。' }
+    }
+  },
+
+  // ===== 妇科 =====
+  '月经不调': {
+    icon: '🌸', 
+    cause: '下丘脑-垂体-卵巢轴功能紊乱、甲状腺疾病、多囊卵巢综合征、子宫病变、精神压力、体重变化。', 
+    mechanism: '激素分泌异常导致月经周期、经期、经量异常。', 
+    diagnosis: '月经周期<21天或>35天，经期<2天或>7天，经量过多或过少。需排除器质性疾病。', 
+    treatment: '根据病因治疗。调经药物：短效避孕药、孕激素。中药调理。', 
+    tcm: '肝郁气滞型（逍遥散）、肾虚型（归肾丸）、气血虚弱型（人参养荣汤）、血瘀型（桃红四物汤）。',
+    department: '妇科',
+    recommendedTests: ['性激素六项', '甲状腺功能', '妇科超声', '基础体温', '血常规'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '精神压力可影响月经，保持心情舒畅。记录月经周期。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['富含铁的食物', '优质蛋白', '新鲜蔬果', '红枣、桂圆'], avoid: ['经期生冷食物', '过度节食', '过量咖啡因'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '适度运动有益。避免过度运动导致闭经。经期避免剧烈运动。' },
+      environment: { icon: '🌿', title: '环境调节', content: '保持规律作息。避免过度节食或暴饮暴食。控制体重在正常范围。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '保证充足睡眠。熬夜可影响内分泌。规律作息。' }
+    }
+  },
+  '多囊卵巢综合征': {
+    icon: '🥚', 
+    cause: '遗传因素、胰岛素抵抗、下丘脑-垂体-卵巢轴功能紊乱、肾上腺功能异常。', 
+    mechanism: '雄激素过多、排卵障碍、卵巢多囊样改变。', 
+    diagnosis: '鹿特丹标准（满足2/3）：稀发排卵/无排卵、高雄激素表现、卵巢多囊样改变。', 
+    treatment: '生活方式干预。调经：短效避孕药、孕激素。改善胰岛素抵抗：二甲双胍。促排卵。', 
+    tcm: '肾虚型（右归丸）、痰湿型（苍附导痰丸）、肝经湿热型（龙胆泻肝汤）、气滞血瘀型（膈下逐瘀汤）。',
+    department: '妇科/生殖医学科',
+    recommendedTests: ['性激素六项', '妇科超声', 'OGTT+胰岛素释放试验', '雄激素', '血脂'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: 'PCOS需长期管理，保持积极心态。控制体重是关键。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['低GI饮食', '高纤维食物', '优质蛋白', '充足蔬菜'], avoid: ['高糖食物', '精制碳水', '高脂肪食物', '含糖饮料'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '规律运动有助于改善胰岛素抵抗。有氧运动+抗阻训练，每周150分钟以上。' },
+      environment: { icon: '🌿', title: '环境调节', content: '控制体重，减重5-10%可改善症状。规律作息。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '保证充足睡眠。规律作息有助于内分泌调节。' }
+    }
+  },
+
+  // ===== 其他 =====
+  '贫血': {
+    icon: '🩸', 
+    cause: '缺铁性贫血最常见（失血、摄入不足、吸收不良）。其他：巨幼细胞贫血、溶血性贫血、再生障碍性贫血。', 
+    mechanism: '血红蛋白减少，携氧能力下降，组织缺氧。', 
+    diagnosis: '成年男性Hb<120g/L，成年女性Hb<110g/L。需明确贫血类型和病因。', 
+    treatment: '根据病因治疗。缺铁性贫血：铁剂+维生素C。巨幼细胞贫血：叶酸、维生素B12。', 
+    tcm: '气血两虚型（八珍汤）、脾胃虚弱型（归脾汤）、肾精亏虚型（左归丸）。',
+    department: '血液科',
+    recommendedTests: ['血常规', '网织红细胞', '铁代谢', '叶酸、维生素B12', '骨髓穿刺（必要时）'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '贫血可导致乏力、头晕，影响生活质量。明确病因，规范治疗。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['红肉、动物肝脏', '血制品', '绿叶蔬菜', '富含维生素C的水果'], avoid: ['浓茶（影响铁吸收）', '咖啡', '钙剂与铁剂同服'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '严重贫血时避免剧烈运动。适度运动有益。逐步增加运动量。' },
+      environment: { icon: '🌿', title: '环境调节', content: '避免久站。起身时动作缓慢。保持室内通风。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '保证充足睡眠。避免熬夜。' }
+    }
+  },
+  '干眼症': {
+    icon: '👁️', 
+    cause: '泪液分泌不足、泪液蒸发过快、睑板腺功能障碍、药物副作用、自身免疫病（干燥综合征）。', 
+    mechanism: '泪膜稳定性下降，眼表损伤，导致干涩、异物感、视疲劳。', 
+    diagnosis: '干眼问卷、泪膜破裂时间、泪液分泌试验、眼表染色、睑板腺成像。', 
+    treatment: '人工泪液、环孢素滴眼液、泪点栓塞、睑板腺按摩、强脉冲光治疗。', 
+    tcm: '肝肾阴虚型（杞菊地黄丸）、肺阴不足型（养阴清肺汤）、脾胃虚弱型（参苓白术散）。',
+    department: '眼科',
+    recommendedTests: ['泪膜破裂时间', '泪液分泌试验', '眼表染色', '睑板腺成像', '自身抗体（排除干燥综合征）'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '干眼症影响生活质量，需长期管理。避免焦虑。注意用眼卫生。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['富含维生素A的食物', '深海鱼', '胡萝卜', '蓝莓'], avoid: ['辛辣刺激食物', '酒精', '过量咖啡因'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '适度运动有益。避免长时间用眼。每20分钟远眺20秒。' },
+      environment: { icon: '🌿', title: '环境调节', content: '使用加湿器。避免空调直吹。减少电子屏幕使用时间。佩戴防护镜。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '保证充足睡眠。睡眠不足可加重干眼。避免熬夜。' }
+    }
+  },
+  '甲状腺结节': {
+    icon: '🦋', 
+    cause: '碘摄入异常、辐射暴露、遗传因素、自身免疫、甲状腺炎症。', 
+    mechanism: '甲状腺组织异常增生形成结节，大多数为良性，少数为恶性。', 
+    diagnosis: '甲状腺超声为首选检查。TI-RADS分级评估恶性风险。细针穿刺活检确诊。', 
+    treatment: '良性结节定期随访。可疑恶性或压迫症状可手术。良性结节也可选择消融治疗。', 
+    tcm: '气滞痰凝型（四海舒郁丸）、阴虚火旺型（知柏地黄丸）、气阴两虚型（生脉散）。',
+    department: '甲状腺外科/内分泌科',
+    recommendedTests: ['甲状腺超声', '甲状腺功能', '甲状腺细针穿刺', '甲状腺核素扫描'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '大多数甲状腺结节为良性，不必过度焦虑。定期随访即可。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['均衡饮食', '适量碘摄入'], avoid: ['过量碘摄入（如合并甲亢）', '刺激性食物'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '适度运动有益。避免颈部剧烈运动。' },
+      environment: { icon: '🌿', title: '环境调节', content: '避免颈部辐射暴露。定期复查超声。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '保证充足睡眠。规律作息。' }
+    }
+  },
+  '高尿酸血症': {
+    icon: '📊', 
+    cause: '嘌呤代谢紊乱、尿酸排泄减少、高嘌呤饮食、遗传因素、代谢综合征。', 
+    mechanism: '血尿酸水平升高，可导致痛风、尿酸性肾结石、肾脏损害。', 
+    diagnosis: '男性和绝经后女性血尿酸>420μmol/L，绝经前女性>360μmol/L。', 
+    treatment: '生活方式干预。降尿酸药物：别嘌醇、非布司他、苯溴马隆。目标<360μmol/L。', 
+    tcm: '脾肾两虚型（参苓白术散合肾气丸）、湿热蕴结型（四妙散）、痰瘀阻络型（桃红四物汤）。',
+    department: '内分泌科/风湿免疫科',
+    recommendedTests: ['血尿酸', '肾功能', '24小时尿尿酸', '泌尿系超声', '血糖血脂'],
+    cards: {
+      mind: { icon: '🧠', title: '心理调养', content: '高尿酸血症需长期管理，预防痛风发作。保持积极心态。' },
+      diet: { icon: '🥗', title: '饮食建议', recommend: ['低嘌呤饮食', '充足饮水（2000ml/天）', '低脂牛奶', '蔬菜水果'], avoid: ['动物内脏', '海鲜', '浓肉汤', '酒精（尤其啤酒）', '含果糖饮料'] },
+      exercise: { icon: '🏃', title: '运动处方', content: '适度运动有助于控制体重和代谢。避免剧烈运动诱发痛风。' },
+      environment: { icon: '🌿', title: '环境调节', content: '控制体重。避免快速减重。定期监测血尿酸。' },
+      sleep: { icon: '😴', title: '睡眠管理', content: '保证充足睡眠。规律作息。' }
+    }
+  }
+};
+
+// ========== 扩展测试项目库 (50+项测试) ==========
+const SELF_TESTS = {
+  // 心血管系统测试
+  '高血压': [
+    { id: 'bp_check', name: '血压自测', desc: '测量静息血压', method: '静坐5分钟后，使用血压计测量。正常：收缩压<120且舒张压<80。高血压：收缩压≥140或舒张压≥90。', normalStandard: '收缩压<120mmHg，舒张压<80mmHg', abnormalNote: '血压升高，建议心内科就诊，完善心电图、心脏超声、肾功能等检查。' },
+    { id: 'bp_orthostatic', name: '体位性血压测试', desc: '评估体位变化对血压的影响', method: '平卧5分钟后测量血压，然后站立1分钟和3分钟后分别测量血压。', normalStandard: '收缩压下降<20mmHg，舒张压下降<10mmHg', abnormalNote: '体位性低血压，建议心内科就诊，排查自主神经功能异常。' }
+  ],
+  '心脏病': [
+    { id: 'heart_rate', name: '心率检测', desc: '测量静息心率', method: '静坐5分钟后，用手指按压桡动脉计数1分钟心跳次数。正常60-100次/分。', normalStandard: '60-100次/分，节律整齐', abnormalNote: '心率异常或心律不齐，建议心内科就诊，完善心电图、24小时动态心电图、心脏超声等检查。' },
+    { id: 'edema_check', name: '水肿检查', desc: '检查下肢水肿', method: '用手指按压小腿胫骨前缘或脚踝内侧，观察按压后是否出现凹陷且恢复缓慢。', normalStandard: '按压后无凹陷或快速恢复', abnormalNote: '下肢水肿，可能提示心功能不全，建议心内科就诊，完善BNP、心脏超声等检查。' },
+    { id: 'chest_pain_assess', name: '胸痛评估', desc: '评估胸痛性质', method: '如有胸痛，注意疼痛部位、性质、持续时间、诱发因素、缓解方式。典型心绞痛：胸骨后压榨样疼痛，持续2-10分钟，休息或含服硝酸甘油可缓解。', normalStandard: '无胸痛症状', abnormalNote: '胸痛症状，建议心内科急诊就诊，排除急性冠脉综合征。需完善心电图、心肌酶谱、冠脉CTA等检查。' }
+  ],
+  '高血脂': [
+    { id: 'xanthelasma', name: '眼睑黄色瘤检查', desc: '观察眼睑是否有黄色斑块', method: '观察眼睑内侧是否有黄色扁平斑块。', normalStandard: '无黄色瘤', abnormalNote: '眼睑黄色瘤提示脂代谢异常，建议内分泌科或心内科就诊，完善血脂四项检查。' },
+    { id: 'arcus_senilis', name: '角膜老年环检查', desc: '观察角膜边缘是否有灰白色环', method: '观察角膜边缘是否有灰白色环状混浊。', normalStandard: '无或年龄相关（>60岁）', abnormalNote: '年轻人出现角膜老年环提示高脂血症，建议完善血脂检查。' }
+  ],
+  '冠心病': [
+    { id: 'heart_rate', name: '心率检测', desc: '测量静息心率', method: '静坐5分钟后，用手指按压桡动脉计数1分钟心跳次数。', normalStandard: '60-100次/分', abnormalNote: '心率异常，建议心内科就诊，完善心电图、心脏超声等检查。' },
+    { id: 'edema_check', name: '水肿检查', desc: '检查下肢水肿', method: '用手指按压小腿胫骨前缘或脚踝内侧，观察按压后是否出现凹陷。', normalStandard: '无凹陷性水肿', abnormalNote: '下肢水肿可能提示心功能不全，建议心内科就诊。' }
+  ],
+  '心律失常': [
+    { id: 'pulse_regular', name: '脉搏节律检查', desc: '评估脉搏是否整齐', method: '用手指按压桡动脉，感受脉搏节律是否整齐，有无间歇或额外搏动。', normalStandard: '节律整齐，无间歇', abnormalNote: '脉搏不齐，建议心内科就诊，完善心电图、24小时动态心电图检查。' },
+    { id: 'heart_rate', name: '心率检测', desc: '测量静息心率', method: '静坐5分钟后，用手指按压桡动脉计数1分钟心跳次数。', normalStandard: '60-100次/分', abnormalNote: '心率过快或过慢，建议心内科就诊。' }
+  ],
+  '心肌炎': [
+    { id: 'heart_rate', name: '心率检测', desc: '测量静息心率', method: '静坐5分钟后测量心率。心肌炎患者常有心动过速。', normalStandard: '60-100次/分', abnormalNote: '心率异常，如有近期感染史+心悸气短，建议心内科急诊就诊，完善心肌酶谱、心电图、心脏超声等检查。' }
+  ],
+
+  // 内分泌系统测试
+  '糖尿病': [
+    { id: 'skin_elastic', name: '皮肤弹性检测', desc: '评估皮肤水合状态', method: '用拇指和食指捏起手背皮肤，松开后观察恢复速度。正常应在1-2秒内恢复。', normalStandard: '1-2秒内恢复', abnormalNote: '皮肤弹性差可能提示脱水或血糖控制不佳，建议内分泌科就诊，监测血糖、糖化血红蛋白。' },
+    { id: 'foot_check', name: '足部检查', desc: '检查糖尿病足风险', method: '观察足部皮肤颜色、有无破损、溃疡；检查足背动脉搏动；测试足部感觉（用棉签轻触）。', normalStandard: '皮肤完整，足背动脉搏动正常，感觉正常', abnormalNote: '足部异常，建议内分泌科就诊，进行糖尿病足筛查。需完善下肢血管超声、神经传导速度等检查。' },
+    { id: 'vision_blur', name: '视力评估', desc: '评估视力变化', method: '观察近期是否有视物模糊、视力下降。', normalStandard: '视力稳定', abnormalNote: '视力变化可能提示糖尿病视网膜病变，建议眼科就诊，完善眼底检查。' }
+  ],
+  '甲状腺功能亢进': [
+    { id: 'tremor_check', name: '手震颤检查', desc: '评估双手是否有细微震颤', method: '双手平伸，手指分开，在双手上放一张纸，观察纸片是否抖动。', normalStandard: '无明显震颤', abnormalNote: '手震颤阳性，建议内分泌科就诊，完善甲状腺功能检查。' },
+    { id: 'heart_rate_fast', name: '心率检测', desc: '甲亢患者常有心动过速', method: '静坐5分钟后测量心率。', normalStandard: '60-100次/分', abnormalNote: '心率过快，建议内分泌科就诊，完善甲状腺功能、心电图检查。' },
+    { id: 'eye_signs', name: '甲亢眼征检查', desc: '观察眼部症状', method: '观察是否有眼球突出、眼睑退缩、凝视、眼睑闭合不全。', normalStandard: '无眼征', abnormalNote: '甲亢眼征阳性，建议内分泌科和眼科就诊，完善甲状腺功能、眼眶CT或MRI检查。' }
+  ],
+  '甲状腺功能减退': [
+    { id: 'reflex_check', name: '跟腱反射检查', desc: '评估跟腱反射松弛时间', method: '让被检者跪在椅子上，用叩诊锤叩击跟腱，观察反射和松弛时间。甲减患者松弛时间延长。', normalStandard: '反射正常，松弛迅速', abnormalNote: '跟腱反射松弛延迟，建议内分泌科就诊，完善甲状腺功能检查。' },
+    { id: 'skin_dry', name: '皮肤状态评估', desc: '评估皮肤干燥程度', method: '观察皮肤是否干燥、粗糙、脱屑，有无非凹陷性水肿。', normalStandard: '皮肤润泽', abnormalNote: '皮肤干燥、粘液性水肿，建议内分泌科就诊，完善甲状腺功能检查。' }
+  ],
+  '痛风': [
+    { id: 'joint_check', name: '关节检查', desc: '检查关节红肿热痛', method: '观察第一跖趾关节、踝关节、膝关节是否有红肿、压痛、痛风石。', normalStandard: '关节无红肿热痛', abnormalNote: '关节红肿热痛，急性发作期建议风湿免疫科就诊，完善血尿酸、关节超声、双源CT检查。' },
+    { id: 'tophi_check', name: '痛风石检查', desc: '检查是否有痛风石', method: '观察耳廓、关节伸侧、肌腱等部位是否有皮下结节（痛风石）。', normalStandard: '无痛风石', abnormalNote: '发现痛风石，建议风湿免疫科就诊，评估降尿酸治疗。' }
+  ],
+  '肥胖症': [
+    { id: 'bmi_check', name: 'BMI计算', desc: '评估体重指数', method: 'BMI = 体重(kg) / 身高(m)²。正常范围18.5-24，超重24-28，肥胖≥28。', normalStandard: 'BMI 18.5-24', abnormalNote: 'BMI异常，建议营养科或内分泌科就诊，进行体重管理评估。需完善血糖、血脂、甲状腺功能等检查。' },
+    { id: 'waist_measure', name: '腰围测量', desc: '评估中心性肥胖', method: '站立位，用软尺在肚脐水平绕一圈测量。男性≥90cm，女性≥85cm为中心性肥胖。', normalStandard: '男性<90cm，女性<85cm', abnormalNote: '中心性肥胖，建议进行代谢综合征筛查，完善血糖、血脂、血压等检查。' }
+  ],
+
+  // 消化系统测试
+  '胃炎': [
+    { id: 'stomach_pain', name: '胃部触诊', desc: '评估胃部压痛', method: '平躺放松，用手轻压上腹部。观察是否有压痛、反跳痛。', normalStandard: '无压痛', abnormalNote: '上腹压痛，建议消化内科就诊，完善胃镜、C13/C14呼气试验检查。' },
+    { id: 'stool_color', name: '大便颜色观察', desc: '观察大便颜色', method: '观察大便颜色是否正常，有无黑便、血便。', normalStandard: '黄色或褐色', abnormalNote: '黑便或血便，提示上消化道出血可能，建议消化内科急诊就诊，完善大便潜血、胃镜检查。' }
+  ],
+  '脂肪肝': [
+    { id: 'liver_palm', name: '肝掌检测', desc: '手掌大小鱼际发红', method: '伸出手掌，观察大鱼际和小鱼际是否异常发红。按压后是否褪色。', normalStandard: '无肝掌', abnormalNote: '肝掌阳性，建议消化内科或肝病科就诊，完善肝功能、腹部超声、FibroScan检查。' },
+    { id: 'waist_measure', name: '腰围测量', desc: '评估中心性肥胖', method: '站立位，用软尺在肚脐水平绕一圈测量。', normalStandard: '男性<90cm，女性<85cm', abnormalNote: '中心性肥胖，建议进行脂肪肝筛查。' }
+  ],
+  '胃溃疡': [
+    { id: 'stomach_pain', name: '胃部触诊', desc: '评估胃部压痛', method: '平躺放松，用手轻压上腹部。观察是否有压痛。', normalStandard: '无压痛', abnormalNote: '上腹压痛，建议消化内科就诊，完善胃镜检查。' },
+    { id: 'stool_color', name: '大便颜色观察', desc: '观察大便颜色', method: '观察大便颜色，有无黑便。', normalStandard: '黄色或褐色', abnormalNote: '黑便提示上消化道出血，建议消化内科急诊就诊。' }
+  ],
+  '肠易激综合征': [
+    { id: 'abdominal_pain', name: '腹痛评估', desc: '评估腹痛特点', method: '记录腹痛部位、性质、与排便的关系、缓解因素。IBS腹痛常在排便后缓解。', normalStandard: '无明显腹痛', abnormalNote: '腹痛明显，建议消化内科就诊，排除器质性疾病。需完善大便常规、肠镜等检查。' }
+  ],
+  '胆囊炎': [
+    { id: 'murphy_sign', name: '墨菲氏征检查', desc: '评估胆囊压痛', method: '被检者平卧，检查者左手拇指置于右肋下胆囊点，其余四指与肋骨配合，嘱被检者深吸气。若吸气过程中因疼痛突然屏气，为阳性。', normalStandard: '墨菲氏征阴性', abnormalNote: '墨菲氏征阳性，提示急性胆囊炎，建议肝胆外科或消化内科急诊就诊，完善腹部超声、血常规检查。' }
+  ],
+  '胰腺炎': [
+    { id: 'abdominal_pain_severe', name: '腹痛评估', desc: '评估腹痛特点', method: '急性胰腺炎腹痛特点：中上腹持续性剧痛，向腰背部放射，伴恶心呕吐。', normalStandard: '无剧烈腹痛', abnormalNote: '剧烈腹痛，疑似急性胰腺炎，建议急诊就诊，完善血淀粉酶、脂肪酶、腹部CT检查。' }
+  ],
+
+  // 呼吸系统测试
+  '哮喘': [
+    { id: 'breath_hold', name: '屏气测试', desc: '评估肺功能', method: '深吸气后屏住呼吸，记录时间。正常成年人可屏气30秒以上。', normalStandard: '≥30秒', abnormalNote: '屏气时间短，肺功能可能下降，建议呼吸内科就诊，完善肺功能检查。' },
+    { id: 'peak_flow', name: '呼气峰流速评估', desc: '简易评估气道通畅度', method: '如有峰流速仪，测量呼气峰流速。无仪器时，可观察日常活动后是否有气促。', normalStandard: '日常活动无气促', abnormalNote: '活动后气促，建议呼吸内科就诊，完善肺功能检查。' }
+  ],
+  '慢性支气管炎': [
+    { id: 'cough_assess', name: '咳嗽评估', desc: '评估咳嗽特点', method: '记录咳嗽持续时间、痰液性状、有无咯血。慢性支气管炎：咳嗽咳痰每年≥3个月，连续≥2年。', normalStandard: '无明显咳嗽咳痰', abnormalNote: '长期咳嗽咳痰，建议呼吸内科就诊，完善肺功能、胸部CT检查。' },
+    { id: 'breath_hold', name: '屏气测试', desc: '评估肺功能', method: '深吸气后屏住呼吸，记录时间。', normalStandard: '≥30秒', abnormalNote: '肺功能可能下降，建议呼吸内科就诊。' }
+  ],
+  '过敏性鼻炎': [
+    { id: 'nasal_symptoms', name: '鼻部症状评估', desc: '评估鼻部症状', method: '观察是否有鼻痒、喷嚏、流清涕、鼻塞。记录症状持续时间、诱发因素。', normalStandard: '无明显鼻部症状', abnormalNote: '鼻部症状明显，建议耳鼻喉科就诊，完善过敏原检测、鼻内镜检查。' }
+  ],
+  '肺炎': [
+    { id: 'fever_cough', name: '发热咳嗽评估', desc: '评估呼吸道感染症状', method: '测量体温，观察咳嗽、咳痰、胸痛症状。', normalStandard: '体温正常，无明显咳嗽', abnormalNote: '发热、咳嗽、咳痰，建议呼吸内科就诊，完善血常规、胸部CT检查。' }
+  ],
+
+  // 神经系统测试
+  '失眠': [
+    { id: 'sleep_quality', name: '睡眠质量自评', desc: '评估近期睡眠状况', method: '回顾最近一周：入睡时间、夜间觉醒次数、早醒情况、日间精神状态。', normalStandard: '入睡<30分钟，夜间觉醒≤1次，日间精神好', abnormalNote: '睡眠质量差，建议神经内科或睡眠医学科就诊，完善睡眠日记、PSG检查。' }
+  ],
+  '偏头痛': [
+    { id: 'headache_assess', name: '头痛评估', desc: '评估头痛特点', method: '记录头痛部位、性质、持续时间、伴随症状、诱发因素。偏头痛特点：单侧搏动性头痛，持续4-72小时，伴恶心/呕吐、畏光畏声。', normalStandard: '无明显头痛', abnormalNote: '头痛症状符合偏头痛特点，建议神经内科就诊，完善头颅MRI排除继发性头痛。' }
+  ],
+  '癫痫': [
+    { id: 'seizure_history', name: '发作史回顾', desc: '回顾是否有癫痫发作', method: '回顾是否有意识丧失、肢体抽搐、口吐白沫、舌咬伤、尿失禁等发作史。', normalStandard: '无发作史', abnormalNote: '有发作史，建议神经内科就诊，完善脑电图、头颅MRI检查。' }
+  ],
+  '帕金森病': [
+    { id: 'tremor_rest', name: '静止性震颤检查', desc: '评估静止性震颤', method: '双手放在腿上放松，观察是否有手指节律性抖动（搓丸样震颤）。', normalStandard: '无静止性震颤', abnormalNote: '静止性震颤阳性，建议神经内科就诊，完善UPDRS评分、头颅MRI检查。' },
+    { id: 'gait_assess', name: '步态评估', desc: '评估步态和姿势', method: '观察行走时是否步幅小、起步困难、转身缓慢、摆臂减少。', normalStandard: '步态正常', abnormalNote: '步态异常，建议神经内科就诊。' }
+  ],
+
+  // 骨骼肌肉系统测试
+  '颈椎病': [
+    { id: 'neck_range', name: '颈椎活动度', desc: '评估颈椎活动范围', method: '缓慢做低头、仰头、左右侧屈、左右旋转动作。观察是否有疼痛或活动受限。', normalStandard: '活动自如，无疼痛', abnormalNote: '颈椎活动受限或疼痛，建议骨科或康复科就诊，完善颈椎X线、MRI检查。' },
+    { id: 'spurling_test', name: '椎间孔挤压试验', desc: '评估神经根压迫', method: '头偏向患侧，检查者双手重叠放在头顶向下按压。出现上肢放射痛为阳性。', normalStandard: '试验阴性', abnormalNote: '试验阳性，提示神经根型颈椎病，建议骨科就诊。' }
+  ],
+  '腰椎间盘突出': [
+    { id: 'slr_test', name: '直腿抬高试验', desc: '评估坐骨神经压迫', method: '平卧，下肢伸直，检查者抬高下肢。出现下肢放射痛为阳性。记录抬高度数。', normalStandard: '抬高>70°无放射痛', abnormalNote: '直腿抬高试验阳性，提示腰椎间盘突出，建议骨科或脊柱外科就诊，完善腰椎MRI检查。' },
+    { id: 'back_pain_assess', name: '腰痛评估', desc: '评估腰痛特点', method: '记录腰痛部位、性质、是否向下肢放射、加重缓解因素。', normalStandard: '无明显腰痛', abnormalNote: '腰痛伴下肢放射痛，建议骨科就诊。' }
+  ],
+  '骨质疏松': [
+    { id: 'height_measure', name: '身高测量', desc: '评估身高变化', method: '测量当前身高，与年轻时身高比较。身高缩短>3cm提示可能有椎体压缩性骨折。', normalStandard: '身高无明显缩短', abnormalNote: '身高明显缩短，建议内分泌科或骨科就诊，完善骨密度检查。' },
+    { id: 'frax_assess', name: '骨折风险评估', desc: '评估骨折风险因素', method: '评估年龄、性别、体重、身高、既往骨折史、父母髋部骨折史、吸烟、饮酒、糖皮质激素使用、类风湿关节炎、继发性骨质疏松等因素。', normalStandard: '低风险', abnormalNote: '骨折风险高，建议完善骨密度检查。' }
+  ],
+  '类风湿关节炎': [
+    { id: 'joint_swelling', name: '关节检查', desc: '检查关节肿痛', method: '观察双手小关节（掌指、近端指间关节）是否有肿胀、压痛、晨僵。', normalStandard: '关节无肿痛', abnormalNote: '关节肿痛、晨僵，建议风湿免疫科就诊，完善RF、抗CCP抗体、关节超声检查。' }
+  ],
+
+  // 精神心理测试
+  '焦虑症': [
+    { id: 'gad7', name: 'GAD-7焦虑筛查', desc: '焦虑症状自评', method: '过去两周内：是否感到紧张、焦虑或烦躁？是否无法停止或控制担忧？是否过度担心各种事情？是否难以放松？是否坐立不安？是否容易烦躁易怒？是否感到害怕，好像会发生可怕的事情？', normalStandard: '总分0-4分（正常）', abnormalNote: '焦虑评分升高，建议精神科或心理科就诊，完善HAMA量表评估。' }
+  ],
+  '抑郁症': [
+    { id: 'phq9', name: 'PHQ-9抑郁筛查', desc: '抑郁症状自评', method: '过去两周内：是否感到做事没有兴趣或乐趣？是否感到心情低落、沮丧或绝望？是否入睡困难或睡眠过多？是否感到疲倦或没有活力？是否食欲不振或进食过多？是否觉得自己很糟糕，让自己或家人失望？是否注意力难以集中？是否动作或说话缓慢？是否有不如死掉或伤害自己的念头？', normalStandard: '总分0-4分（正常）', abnormalNote: '抑郁评分升高，建议精神科或心理科就诊，完善HAMD量表评估。如有自伤念头请立即就医。' }
+  ],
+  '强迫症': [
+    { id: 'ocd_symptoms', name: '强迫症状评估', desc: '评估强迫思维和行为', method: '是否有反复出现的、不受控制的想法、冲动或图像？是否有重复的行为（如洗手、检查、计数）？这些症状是否耗时且引起痛苦？', normalStandard: '无明显强迫症状', abnormalNote: '强迫症状明显，建议精神科或心理科就诊，完善Y-BOCS量表评估。' }
+  ],
+
+  // 泌尿系统测试
+  '慢性肾病': [
+    { id: 'urine_foam', name: '尿液泡沫检查', desc: '观察尿液是否有泡沫', method: '观察排尿后尿液是否有大量泡沫且不易消散。', normalStandard: '无大量泡沫', abnormalNote: '尿液泡沫多可能提示蛋白尿，建议肾内科就诊，完善尿常规、尿微量白蛋白、肾功能检查。' },
+    { id: 'edema_check', name: '水肿检查', desc: '检查眼睑和下肢水肿', method: '晨起观察眼睑是否有水肿。按压小腿胫骨前缘检查是否有凹陷性水肿。', normalStandard: '无水肿', abnormalNote: '水肿可能提示肾功能异常，建议肾内科就诊。' }
+  ],
+  '肾结石': [
+    { id: 'flank_pain', name: '腰腹痛评估', desc: '评估腰腹痛特点', method: '观察是否有腰腹部绞痛，是否向会阴部放射，是否伴恶心呕吐、血尿。', normalStandard: '无腰腹痛', abnormalNote: '腰腹绞痛，疑似肾结石发作，建议泌尿外科急诊就诊，完善泌尿系超声、CT检查。' }
+  ],
+  '前列腺炎': [
+    { id: 'prostate_symptoms', name: '前列腺症状评估', desc: '评估下尿路症状', method: '观察是否有尿频、尿急、尿痛、会阴部不适、排尿不畅等症状。', normalStandard: '无明显症状', abnormalNote: '下尿路症状明显，建议泌尿外科就诊，完善尿常规、前列腺液检查、泌尿系超声。' }
+  ],
+
+  // 皮肤科测试
+  '湿疹': [
+    { id: 'skin_lesion', name: '皮损评估', desc: '观察皮损特点', method: '观察皮损形态：红斑、丘疹、水疱、渗出、结痂、苔藓样变。记录瘙痒程度。', normalStandard: '皮肤正常', abnormalNote: '皮损明显，建议皮肤科就诊，完善过敏原检测。' }
+  ],
+  '银屑病': [
+    { id: 'psoriasis_lesion', name: '银屑病皮损评估', desc: '观察银屑病皮损', method: '观察是否有红色斑块上覆银白色鳞屑，好发于头皮、肘膝、腰骶部。刮除鳞屑是否有薄膜现象和点状出血。', normalStandard: '皮肤正常', abnormalNote: '典型银屑病皮损，建议皮肤科就诊。' }
+  ],
+  '痤疮': [
+    { id: 'acne_assess', name: '痤疮评估', desc: '评估痤疮严重程度', method: '观察面部、胸背部是否有粉刺、丘疹、脓疱、结节、囊肿。', normalStandard: '无或少量粉刺', abnormalNote: '痤疮明显，建议皮肤科就诊。' }
+  ],
+
+  // 妇科测试
+  '月经不调': [
+    { id: 'menstrual_cycle', name: '月经周期记录', desc: '记录月经周期', method: '记录近3个月月经周期（月经第一天到下次月经第一天的天数）、经期天数、经量。', normalStandard: '周期21-35天，经期2-7天', abnormalNote: '月经周期或经期异常，建议妇科就诊，完善性激素六项、妇科超声检查。' }
+  ],
+  '多囊卵巢综合征': [
+    { id: 'hirsutism', name: '多毛评估', desc: '评估体毛分布', method: '观察上唇、下巴、胸部、腹部、背部是否有过多粗毛生长。', normalStandard: '无明显多毛', abnormalNote: '多毛提示高雄激素血症，建议妇科或内分泌科就诊，完善性激素六项、妇科超声检查。' },
+    { id: 'menstrual_cycle', name: '月经周期记录', desc: '记录月经周期', method: '记录月经周期是否规律。', normalStandard: '周期规律', abnormalNote: '月经稀发或不规则，建议妇科就诊。' }
+  ],
+
+  // 其他测试
+  '贫血': [
+    { id: 'conjunctiva_check', name: '睑结膜检查', desc: '观察睑结膜颜色', method: '翻开下眼睑，观察睑结膜颜色是否苍白。', normalStandard: '睑结膜红润', abnormalNote: '睑结膜苍白提示贫血，建议血液科就诊，完善血常规、铁代谢等检查。' },
+    { id: 'nail_check', name: '指甲检查', desc: '观察指甲形态', method: '观察指甲是否苍白、扁平、反甲（勺状甲）。', normalStandard: '指甲红润，形态正常', abnormalNote: '指甲异常提示可能缺铁性贫血，建议血液科就诊。' }
+  ],
+  '干眼症': [
+    { id: 'dry_eye_symptoms', name: '干眼症状评估', desc: '评估眼部症状', method: '是否有眼干涩、异物感、烧灼感、视疲劳、畏光等症状。', normalStandard: '无明显干眼症状', abnormalNote: '干眼症状明显，建议眼科就诊，完善泪膜破裂时间、泪液分泌试验检查。' }
+  ],
+  '甲状腺结节': [
+    { id: 'neck_palpation', name: '颈部触诊', desc: '触诊甲状腺', method: '站在被检者身后，双手拇指置于颈后，其余四指触摸甲状腺，观察是否有结节。', normalStandard: '甲状腺无肿大及结节', abnormalNote: '触及甲状腺结节，建议甲状腺外科或内分泌科就诊，完善甲状腺超声检查。' }
+  ],
+  '高尿酸血症': [
+    { id: 'joint_check', name: '关节检查', desc: '检查关节是否有痛风表现', method: '观察关节是否有红肿热痛、痛风石。', normalStandard: '关节正常', abnormalNote: '关节异常，建议风湿免疫科就诊，完善血尿酸检查。' }
+  ],
+
+  // 通用测试
+  '通用': [
+    { id: 'gait', name: '步态平衡检测', desc: '评估行走稳定性', method: '在安全环境下，闭眼单脚站立，记录时间。30秒以上为正常。', normalStandard: '≥30秒', abnormalNote: '平衡能力下降，建议神经内科就诊，排查神经系统疾病。' },
+    { id: 'bmi_check', name: 'BMI计算', desc: '评估体重指数', method: 'BMI = 体重(kg) / 身高(m)²。正常范围18.5-24。', normalStandard: 'BMI 18.5-24', abnormalNote: 'BMI异常，建议进行体重管理评估。' },
+    { id: 'bp_check', name: '血压自测', desc: '测量静息血压', method: '静坐5分钟后，使用血压计测量。', normalStandard: '收缩压<120mmHg，舒张压<80mmHg', abnormalNote: '血压异常，建议心内科就诊。' }
+  ]
+};
+
+// ========== 就医建议库 ==========
+const MEDICAL_ADVICE = {
+  '高血压': { department: '心内科', recommendedTests: ['血压监测', '心电图', '心脏超声', '肾功能', '血脂四项', '尿微量白蛋白'], urgency: 'routine' },
+  '心脏病': { department: '心内科/心脏外科', recommendedTests: ['心电图', '心脏超声', '冠脉CTA', '心肌酶谱', 'BNP', '血脂四项'], urgency: 'urgent' },
+  '高血脂': { department: '心内科/内分泌科', recommendedTests: ['血脂四项', '肝功能', '血糖', '甲状腺功能', '心电图'], urgency: 'routine' },
+  '冠心病': { department: '心内科/心脏外科', recommendedTests: ['心电图', '冠脉CTA', '冠脉造影', '心肌酶谱', '血脂四项', '心脏超声'], urgency: 'urgent' },
+  '心律失常': { department: '心内科/电生理科', recommendedTests: ['心电图', '24小时动态心电图', '心脏超声', '电解质', '甲状腺功能'], urgency: 'routine' },
+  '心肌炎': { department: '心内科', recommendedTests: ['心电图', '心肌酶谱', '肌钙蛋白', '心脏超声', '心肌MRI', '病毒学检查'], urgency: 'urgent' },
+  '糖尿病': { department: '内分泌科', recommendedTests: ['空腹血糖', '餐后2h血糖', '糖化血红蛋白', '尿微量白蛋白', '眼底检查', '足部检查'], urgency: 'routine' },
+  '甲状腺功能亢进': { department: '内分泌科', recommendedTests: ['甲状腺功能', 'TRAb', '甲状腺超声', '心电图', '血常规', '肝功能'], urgency: 'routine' },
+  '甲状腺功能减退': { department: '内分泌科', recommendedTests: ['甲状腺功能', 'TPOAb', '甲状腺超声', '血脂', '心电图'], urgency: 'routine' },
+  '痛风': { department: '风湿免疫科/内分泌科', recommendedTests: ['血尿酸', '肾功能', '关节超声', '双源CT', '24小时尿尿酸'], urgency: 'acute' },
+  '肥胖症': { department: '内分泌科/营养科', recommendedTests: ['BMI', '腰围', '血糖', '血脂', '甲状腺功能', '胰岛素释放试验'], urgency: 'routine' },
+  '胃炎': { department: '消化内科', recommendedTests: ['C13/C14呼气试验', '胃镜', '胃功能三项', '血常规'], urgency: 'routine' },
+  '脂肪肝': { department: '消化内科/肝病科', recommendedTests: ['肝功能', '腹部B超', 'FibroScan', '血脂', '血糖', '乙肝五项'], urgency: 'routine' },
+  '胃溃疡': { department: '消化内科', recommendedTests: ['胃镜', 'C13/C14呼气试验', '胃功能三项', '血常规', '大便潜血'], urgency: 'routine' },
+  '肠易激综合征': { department: '消化内科', recommendedTests: ['大便常规+潜血', '肠镜（必要时）', '腹部B超', '甲状腺功能'], urgency: 'routine' },
+  '胆囊炎': { department: '肝胆外科/消化内科', recommendedTests: ['腹部超声', '肝功能', '血常规', '血淀粉酶', 'MRCP（必要时）'], urgency: 'acute' },
+  '胰腺炎': { department: '消化内科/肝胆外科', recommendedTests: ['血淀粉酶', '脂肪酶', '腹部CT', '肝功能', '血脂', '血钙'], urgency: 'emergency' },
+  '哮喘': { department: '呼吸内科', recommendedTests: ['肺功能', '支气管激发/舒张试验', '过敏原检测', 'FeNO', '胸部CT'], urgency: 'routine' },
+  '慢性支气管炎': { department: '呼吸内科', recommendedTests: ['肺功能', '胸部CT', '血常规', '痰培养', '动脉血气'], urgency: 'routine' },
+  '过敏性鼻炎': { department: '耳鼻喉科/变态反应科', recommendedTests: ['过敏原检测', '鼻内镜', '血清总IgE', '鼻分泌物涂片'], urgency: 'routine' },
+  '肺炎': { department: '呼吸内科/感染科', recommendedTests: ['胸部CT/X线', '血常规', 'CRP/PCT', '痰培养', '病原学检测'], urgency: 'acute' },
+  '失眠': { department: '神经内科/睡眠医学科', recommendedTests: ['睡眠日记', 'PSG（多导睡眠图）', '焦虑抑郁量表', '甲状腺功能'], urgency: 'routine' },
+  '偏头痛': { department: '神经内科', recommendedTests: ['头颅CT/MRI（排除继发性）', '脑电图', '经颅多普勒'], urgency: 'routine' },
+  '癫痫': { department: '神经内科', recommendedTests: ['脑电图', '头颅MRI', '血常规', '肝功能', '抗癫痫药物血药浓度'], urgency: 'routine' },
+  '帕金森病': { department: '神经内科', recommendedTests: ['头颅MRI', 'DAT-SPECT', 'UPDRS评分', '认知功能评估'], urgency: 'routine' },
+  '颈椎病': { department: '骨科/康复科', recommendedTests: ['颈椎X线', '颈椎MRI', '肌电图', 'TCD'], urgency: 'routine' },
+  '腰椎间盘突出': { department: '骨科/脊柱外科', recommendedTests: ['腰椎MRI', '腰椎CT', '肌电图', '骨密度'], urgency: 'routine' },
+  '骨质疏松': { department: '内分泌科/骨科', recommendedTests: ['骨密度（DXA）', '骨代谢标志物', '血钙磷', '甲状旁腺激素', '25-OH维生素D'], urgency: 'routine' },
+  '类风湿关节炎': { department: '风湿免疫科', recommendedTests: ['RF', '抗CCP抗体', 'ESR/CRP', '关节超声', '关节X线/MRI'], urgency: 'routine' },
+  '焦虑症': { department: '精神科/心理科', recommendedTests: ['HAMA焦虑量表', 'SAS焦虑自评量表', '甲状腺功能', '心电图'], urgency: 'routine' },
+  '抑郁症': { department: '精神科/心理科', recommendedTests: ['HAMD抑郁量表', 'SDS抑郁自评量表', '甲状腺功能', '心电图'], urgency: 'routine' },
+  '强迫症': { department: '精神科/心理科', recommendedTests: ['Y-BOCS量表', 'HAMA/HAMD', '甲状腺功能'], urgency: 'routine' },
+  '慢性肾病': { department: '肾内科', recommendedTests: ['肾功能', '尿常规', '尿微量白蛋白/肌酐比值', '肾脏超声', 'eGFR', '电解质'], urgency: 'routine' },
+  '肾结石': { department: '泌尿外科', recommendedTests: ['泌尿系超声', '泌尿系CT', '尿常规', '肾功能', '血钙磷尿酸'], urgency: 'acute' },
+  '前列腺炎': { department: '泌尿外科', recommendedTests: ['尿常规', '前列腺液常规', '泌尿系超声', '尿培养'], urgency: 'routine' },
+  '湿疹': { department: '皮肤科', recommendedTests: ['过敏原检测', '血常规（嗜酸性粒细胞）', '血清总IgE', '皮肤斑贴试验'], urgency: 'routine' },
+  '银屑病': { department: '皮肤科', recommendedTests: ['皮肤病理（必要时）', '血常规', '肝功能', '自身抗体'], urgency: 'routine' },
+  '痤疮': { department: '皮肤科', recommendedTests: ['性激素六项（女性）', '皮肤镜', '细菌培养（必要时）'], urgency: 'routine' },
+  '月经不调': { department: '妇科', recommendedTests: ['性激素六项', '甲状腺功能', '妇科超声', '基础体温', '血常规'], urgency: 'routine' },
+  '多囊卵巢综合征': { department: '妇科/生殖医学科', recommendedTests: ['性激素六项', '妇科超声', 'OGTT+胰岛素释放试验', '雄激素', '血脂'], urgency: 'routine' },
+  '贫血': { department: '血液科', recommendedTests: ['血常规', '网织红细胞', '铁代谢', '叶酸、维生素B12', '骨髓穿刺（必要时）'], urgency: 'routine' },
+  '干眼症': { department: '眼科', recommendedTests: ['泪膜破裂时间', '泪液分泌试验', '眼表染色', '睑板腺成像', '自身抗体（排除干燥综合征）'], urgency: 'routine' },
+  '甲状腺结节': { department: '甲状腺外科/内分泌科', recommendedTests: ['甲状腺超声', '甲状腺功能', '甲状腺细针穿刺', '甲状腺核素扫描'], urgency: 'routine' },
+  '高尿酸血症': { department: '内分泌科/风湿免疫科', recommendedTests: ['血尿酸', '肾功能', '24小时尿尿酸', '泌尿系超声', '血糖血脂'], urgency: 'routine' }
+};
+
+// ========== 工具函数 ==========
+function lsGet(key) { try { return JSON.parse(localStorage.getItem(STORAGE_PREFIX + key)); } catch { return null; } }
+function lsSet(key, val) { localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify(val)); }
+function showToast(msg, duration = 2000) { const t = document.getElementById('toast'); t.textContent = msg; t.style.opacity = '1'; setTimeout(() => { t.style.opacity = '0'; }, duration); }
+function openModal(id) { document.getElementById(id).classList.add('show'); document.body.style.overflow = 'hidden'; }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); document.body.style.overflow = ''; }
+function closeOnOverlay(e, id) { if (e.target === e.currentTarget) closeModal(id); }
+function formatDate(ts) { const d = new Date(ts); return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
+function getDateStr(ts) { const d = new Date(ts); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+
+// ========== 页面切换 ==========
+function switchPage(pageName) {
+  ['home', 'improve', 'profile'].forEach(p => { document.getElementById(`page-${p}`).classList.toggle('active', p === pageName); });
+  document.querySelectorAll('.bottom-nav-item').forEach((item, idx) => { const pages = ['home', 'improve', 'profile']; item.classList.toggle('active', pages[idx] === pageName); });
+  if (pageName === 'home') updateHealthScore();
+  else if (pageName === 'improve') { renderDiseaseAccordion(); renderMyPlan(); renderCalendar(); renderTodayPlanList(); renderBadges(); }
+  else if (pageName === 'profile') renderProfile();
+}
+
+// ========== 健康分计算 ==========
+function calculateHealthScore() {
+  const feedbacks = lsGet('feedbacks') || [];
+  const testResult = lsGet('test_result');
+  const profile = lsGet('profile') || {};
+  const checkins = lsGet('checkins') || {};
+  const aiScore = lsGet('ai_score') || 75;
+  let symptomScore = 85;
+  if (feedbacks.length > 0) {
+    const recent = feedbacks.slice(-5);
+    let total = 0;
+    recent.forEach(f => { if (f.tag === '很好') total += 95; else if (f.tag === '一般') total += 70; else if (f.tag === '不舒服') total += 40; else total += 70; });
+    symptomScore = total / recent.length;
+  }
+  let riskScore = 80;
+  if (testResult) {
+    const results = testResult.results || [];
+    const abnormal = results.filter(r => r.value === '异常').length;
+    riskScore = Math.max(20, 100 - abnormal * 15);
+  }
+  let completenessScore = 30;
+  if (profile.nickname) completenessScore += 15;
+  if (profile.age) completenessScore += 15;
+  if (profile.gender) completenessScore += 10;
+  if (profile.bloodType) completenessScore += 5;
+  const diseases = lsGet('diseases') || [];
+  if (diseases.length > 0) completenessScore += 10;
+  completenessScore = Math.min(100, completenessScore);
+  let checkinScore = 50;
+  const today = getDateStr(Date.now());
+  const thisMonth = today.substring(0, 7);
+  let monthDays = 0;
+  Object.keys(checkins).forEach(key => { if (key.startsWith(thisMonth)) monthDays++; });
+  if (monthDays > 0) checkinScore = Math.min(100, 50 + monthDays * 5);
+  const total = Math.round(symptomScore * 0.30 + riskScore * 0.25 + completenessScore * 0.15 + checkinScore * 0.20 + aiScore * 0.10);
+  return { total };
+}
+function getScoreColor(score) { if (score >= 90) return '#22C55E'; if (score >= 70) return '#84CC16'; if (score >= 50) return '#F97316'; return '#EF4444'; }
+function getScoreLabel(score) { if (score >= 90) return '优秀'; if (score >= 70) return '良好'; if (score >= 50) return '需关注'; return '需重视'; }
+function getScoreDesc(score) { if (score >= 90) return '你的健康状况非常棒，继续保持！'; if (score >= 70) return '整体不错，还有提升空间。'; if (score >= 50) return '建议关注薄弱环节，积极改善。'; return '请重视健康问题，建议及时就医。'; }
+function updateHealthScore() {
+  const { total } = calculateHealthScore();
+  const color = getScoreColor(total);
+  document.getElementById('score-arc').setAttribute('stroke', color);
+  setTimeout(() => { document.getElementById('score-arc').setAttribute('stroke-dashoffset', SCORE_CIRCUMFERENCE * (1 - total / 100)); }, 100);
+  animateNumber('score-value', total);
+  document.getElementById('score-label').textContent = getScoreLabel(total);
+  document.getElementById('score-label').style.color = color;
+  document.getElementById('score-desc').textContent = getScoreDesc(total);
+  const history = lsGet('score_history') || [];
+  const today = getDateStr(Date.now());
+  if (!history.find(h => h.date === today)) { history.push({ date: today, score: total }); if (history.length > 30) history.shift(); lsSet('score_history', history); }
+}
+function animateNumber(id, target) { const el = document.getElementById(id); let current = 0; const step = Math.max(1, Math.ceil(target / 40)); const timer = setInterval(() => { current += step; if (current >= target) { current = target; clearInterval(timer); } el.textContent = current; el.style.color = getScoreColor(current); }, 30); }
+function initHome() { const profile = lsGet('profile') || {}; document.getElementById('home-nickname').textContent = profile.nickname || '未设置'; updateHealthScore(); }
+
+// ========== 模块一：反馈下 ==========
+let currentQuickTag = '';
+let uploadedFiles = [];
+function openFeedback() { currentQuickTag = ''; uploadedFiles = []; document.getElementById('feedback-text').value = ''; document.getElementById('file-list').innerHTML = ''; document.getElementById('feedback-response').classList.add('hidden'); document.querySelectorAll('#modal-feedback .tag').forEach(t => { t.classList.remove('ring-2', 'ring-offset-1'); }); renderFeedbackHistory(); openModal('modal-feedback'); }
+function selectQuickTag(el, tag) { currentQuickTag = tag; document.querySelectorAll('#modal-feedback .tag').forEach(t => { t.classList.remove('ring-2', 'ring-offset-1'); }); el.classList.add('ring-2', 'ring-offset-1'); }
+function simulateUpload() { const names = ['体检报告.pdf', '血常规.jpg', '用药清单.png', 'B超结果.pdf']; const name = names[Math.floor(Math.random() * names.length)]; uploadedFiles.push(name); renderFileList(); showToast('已添加：' + name); }
+function renderFileList() { document.getElementById('file-list').innerHTML = uploadedFiles.map((f, i) => `<div class="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2 mb-1"><span class="text-sm text-gray-600 truncate">📎 ${f}</span><button onclick="removeFile(${i})" class="text-red-400 text-xs ml-2">删除</button></div>`).join(''); }
+function removeFile(idx) { uploadedFiles.splice(idx, 1); renderFileList(); }
+function submitFeedback() {
+  const text = document.getElementById('feedback-text').value.trim();
+  if (!currentQuickTag && !text) { showToast('请至少选择一个快捷标签或输入内容'); return; }
+  const feedback = { id: Date.now(), tag: currentQuickTag || '未选择', text: text, files: [...uploadedFiles], timestamp: Date.now() };
+  const feedbacks = lsGet('feedbacks') || []; feedbacks.push(feedback); lsSet('feedbacks', feedbacks);
+  const responses = { '很好': '很高兴你今天状态不错！保持好心情，健康与你同行。', '一般': '记录下来了。注意休息，适当运动，保持规律作息。', '不舒服': '已记录你的不适。建议密切关注，如持续不适请及时就医。' };
+  const resp = responses[currentQuickTag] || '感谢你的反馈，已记录到健康档案。';
+  const respEl = document.getElementById('feedback-response'); respEl.textContent = resp; respEl.classList.remove('hidden');
+  updateHealthScore(); renderFeedbackHistory();
+  currentQuickTag = ''; uploadedFiles = []; document.getElementById('feedback-text').value = ''; document.getElementById('file-list').innerHTML = '';
+  document.querySelectorAll('#modal-feedback .tag').forEach(t => { t.classList.remove('ring-2', 'ring-offset-1'); });
+  showToast('反馈已保存');
+}
+function renderFeedbackHistory() {
+  const feedbacks = lsGet('feedbacks') || [];
+  const container = document.getElementById('feedback-history');
+  if (feedbacks.length === 0) { container.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">暂无反馈记录</p>'; return; }
+  container.innerHTML = feedbacks.slice().reverse().slice(0, 20).map(f => {
+    const tagColors = { '很好': 'bg-green-50 text-green-600', '一般': 'bg-yellow-50 text-yellow-600', '不舒服': 'bg-red-50 text-red-500' };
+    const tagClass = tagColors[f.tag] || 'bg-gray-100 text-gray-600';
+    return `<div class="bg-gray-50 rounded-xl p-3"><div class="flex items-center justify-between mb-1"><span class="tag ${tagClass} text-xs">${f.tag}</span><span class="text-xs text-gray-400">${formatDate(f.timestamp)}</span></div>${f.text ? `<p class="text-sm text-gray-600 mt-1">${f.text}</p>` : ''}${f.files?.length ? `<p class="text-xs text-gray-400 mt-1">📎 ${f.files.length}个附件</p>` : ''}</div>`;
+  }).join('');
+}
+
+// ========== 模块二：测一下 ==========
+let testStep = 1;
+let selfTestResults = {};
+function openTest() { testStep = 1; selfTestResults = {}; updateTestStep(); renderRiskTests(); openModal('modal-test'); }
+function updateTestStep() { for (let i = 1; i <= 2; i++) { document.getElementById(`test-step-${i}`).classList.toggle('hidden', i !== testStep); const dot = document.getElementById(`test-step-dot-${i}`); dot.classList.remove('active', 'done'); if (i === testStep) dot.classList.add('active'); else if (i < testStep) dot.classList.add('done'); } }
+function renderRiskTests() {
+  const diseases = lsGet('diseases') || [];
+  const container = document.getElementById('risk-test-list');
+  const noRiskTip = document.getElementById('no-risk-tip');
+  let tests = [];
+  diseases.forEach(d => { if (SELF_TESTS[d]) { SELF_TESTS[d].forEach(t => { if (!tests.find(x => x.id === t.id)) tests.push({ ...t, relatedDisease: d }); }); } });
+  if (tests.length === 0) { tests = SELF_TESTS['通用']; }
+  if (tests.length === 0) { container.innerHTML = ''; noRiskTip.classList.remove('hidden'); return; }
+  noRiskTip.classList.add('hidden');
+  container.innerHTML = tests.map((t, idx) => `
+    <div class="bg-gray-50 rounded-xl p-4">
+      <div class="flex items-start gap-3 mb-2">
+        <span class="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">${idx+1}</span>
+        <div><h4 class="font-semibold text-gray-700 text-sm">${t.name}</h4><p class="text-xs text-gray-400 mt-0.5">${t.desc}${t.relatedDisease ? ` · 相关：${t.relatedDisease}` : ''}</p></div>
+      </div>
+      <details class="ml-9 mb-3">
+        <summary class="text-xs text-primary cursor-pointer">查看检测方法与标准</summary>
+        <div class="text-xs text-gray-500 mt-1 leading-relaxed">
+          <p class="mb-1"><strong>检测方法：</strong>${t.method}</p>
+          ${t.normalStandard ? `<p class="mb-1"><strong class="text-green-600">正常标准：</strong><span class="text-green-600">${t.normalStandard}</span></p>` : ''}
+          ${t.abnormalNote ? `<p><strong class="text-red-500">异常提示：</strong><span class="text-red-500">${t.abnormalNote}</span></p>` : ''}
+        </div>
+      </details>
+      <div class="flex gap-2 ml-9">
+        <button onclick="selectSelfTest('${t.id}','正常',this)" class="choice-btn flex-1 text-xs py-2" data-group="self_${t.id}" data-value="正常">✅ 正常</button>
+        <button onclick="selectSelfTest('${t.id}','异常',this)" class="choice-btn flex-1 text-xs py-2" data-group="self_${t.id}" data-value="异常">⚠️ 异常</button>
+        <button onclick="selectSelfTest('${t.id}','不确定',this)" class="choice-btn flex-1 text-xs py-2" data-group="self_${t.id}" data-value="不确定">❓ 不确定</button>
+      </div>
+    </div>
+  `).join('');
+}
+function selectSelfTest(id, value, el) { selfTestResults[id] = value; el.parentElement.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected')); el.classList.add('selected'); }
+function testNextStep(step) { if (step === 2 && testStep === 1) { const diseases = lsGet('diseases') || []; let tests = []; diseases.forEach(d => { if (SELF_TESTS[d]) tests = tests.concat(SELF_TESTS[d]); }); if (tests.length === 0) tests = SELF_TESTS['通用']; const allDone = tests.every(t => selfTestResults[t.id]); if (!allDone && tests.length > 0) { showToast('请完成所有自测项目'); return; } renderTestResult(); } testStep = step; updateTestStep(); }
+function renderTestResult() {
+  const container = document.getElementById('test-result');
+  const diseases = lsGet('diseases') || [];
+  let tests = [];
+  diseases.forEach(d => { if (SELF_TESTS[d]) tests = tests.concat(SELF_TESTS[d].map(t => ({ ...t, relatedDisease: d }))); });
+  if (tests.length === 0) tests = SELF_TESTS['通用'].map(t => ({ ...t, relatedDisease: '通用' }));
+  const abnormalCount = Object.values(selfTestResults).filter(v => v === '异常').length;
+  container.innerHTML = tests.map(t => {
+    const val = selfTestResults[t.id] || '未测';
+    const colors = { '正常': 'text-green-600 bg-green-50', '异常': 'text-red-500 bg-red-50', '不确定': 'text-yellow-600 bg-yellow-50', '未测': 'text-gray-400 bg-gray-50' };
+    return `<div class="flex items-center justify-between py-2 border-b border-gray-50"><span class="text-sm text-gray-600">${t.name}</span><span class="text-xs px-3 py-1 rounded-full ${colors[val]}">${val}</span></div>`;
+  }).join('');
+  const summaryBox = document.getElementById('test-summary-box');
+  if (abnormalCount === 0) { 
+    summaryBox.className = 'p-4 rounded-xl mb-4 bg-green-50'; 
+    summaryBox.innerHTML = '<p class="text-sm text-green-700 font-semibold">✅ 所有项目正常，继续保持！</p>'; 
+  } else { 
+    // 获取异常项目对应的疾病就医建议
+    const abnormalDiseases = new Set();
+    tests.forEach(t => {
+      if (selfTestResults[t.id] === '异常' && t.relatedDisease && t.relatedDisease !== '通用') {
+        abnormalDiseases.add(t.relatedDisease);
+      }
+    });
+    
+    let medicalAdviceHtml = '';
+    if (abnormalDiseases.size > 0 && typeof MEDICAL_ADVICE !== 'undefined') {
+      medicalAdviceHtml = '<div class="mt-4 space-y-3">';
+      abnormalDiseases.forEach(disease => {
+        const advice = MEDICAL_ADVICE[disease];
+        if (advice) {
+          const urgencyText = { 'emergency': '🚨 急诊', 'acute': '⚠️ 尽快就诊', 'urgent': '⏰ 需及时就诊', 'routine': '📅 门诊随访' };
+          medicalAdviceHtml += `
+            <div class="bg-white rounded-lg p-3 border border-red-100">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="text-sm font-semibold text-gray-800">${disease}</span>
+                <span class="text-xs px-2 py-0.5 rounded-full ${advice.urgency === 'emergency' ? 'bg-red-100 text-red-600' : advice.urgency === 'acute' ? 'bg-orange-100 text-orange-600' : advice.urgency === 'urgent' ? 'bg-yellow-100 text-yellow-600' : 'bg-blue-100 text-blue-600'}">${urgencyText[advice.urgency] || '门诊随访'}</span>
+              </div>
+              <p class="text-xs text-gray-600 mb-1"><span class="font-medium">推荐科室：</span>${advice.department}</p>
+              <p class="text-xs text-gray-600"><span class="font-medium">建议检查：</span>${advice.recommendedTests.join('、')}</p>
+            </div>`;
+        }
+      });
+      medicalAdviceHtml += '</div>';
+    }
+    
+    summaryBox.className = 'p-4 rounded-xl mb-4 bg-red-50'; 
+    summaryBox.innerHTML = `
+      <p class="text-sm text-red-700 font-semibold mb-2">⚠️ 发现${abnormalCount}项异常，建议就医检查！</p>
+      <p class="text-xs text-red-600">请根据以下建议及时就医：</p>
+      ${medicalAdviceHtml}
+    `; 
+  }
+}
+function saveTestResult() {
+  const diseases = lsGet('diseases') || [];
+  let tests = [];
+  diseases.forEach(d => { if (SELF_TESTS[d]) tests = tests.concat(SELF_TESTS[d]); });
+  if (tests.length === 0) tests = SELF_TESTS['通用'];
+  const result = { results: tests.map(t => ({ id: t.id, name: t.name, value: selfTestResults[t.id] || '未测' })), timestamp: Date.now() };
+  lsSet('test_result', result);
+  updateHealthScore();
+  showToast('自测结果已保存到档案');
+  closeModal('modal-test');
+}
+
+// ========== 档案页 ==========
+function renderProfile() {
+  const profile = lsGet('profile') || {};
+  document.getElementById('sum-nickname').value = profile.nickname || '';
+  document.getElementById('sum-age').value = profile.age || '';
+  document.getElementById('sum-gender').value = profile.gender || '';
+  document.getElementById('sum-blood').value = profile.bloodType || '';
+  renderKeywords(); renderDiseaseList(); renderAllergyLists(); renderShareCode();
+}
+function saveBasicInfo() {
+  const profile = lsGet('profile') || {};
+  profile.nickname = document.getElementById('sum-nickname').value.trim();
+  profile.age = document.getElementById('sum-age').value;
+  profile.gender = document.getElementById('sum-gender').value;
+  profile.bloodType = document.getElementById('sum-blood').value;
+  lsSet('profile', profile);
+  document.getElementById('home-nickname').textContent = profile.nickname || '未设置';
+  updateHealthScore();
+  showToast('基本信息已保存');
+}
+function renderKeywords() {
+  const feedbacks = lsGet('feedbacks') || [];
+  const keywords = new Set();
+  feedbacks.slice(-10).forEach(f => { if (f.tag && f.tag !== '未选择') keywords.add(f.tag); });
+  const container = document.getElementById('sum-keywords');
+  if (keywords.size === 0) container.innerHTML = '<span class="text-xs text-gray-400">暂无数据</span>';
+  else container.innerHTML = [...keywords].map(k => `<span class="tag bg-primary-light text-primary text-xs">${k}</span>`).join('');
+}
+function renderDiseaseList() {
+  const diseases = lsGet('diseases') || [];
+  document.getElementById('disease-list').innerHTML = diseases.map((d, i) => `<span class="tag bg-red-50 text-red-500 text-xs">${d} <button onclick="removeDisease(${i})" class="ml-1 text-red-300 hover:text-red-500">&times;</button></span>`).join('');
+}
+function addDisease() {
+  const input = document.getElementById('disease-input');
+  const val = input.value.trim();
+  if (!val) return;
+  const diseases = lsGet('diseases') || [];
+  if (diseases.includes(val)) { showToast('已存在'); return; }
+  diseases.push(val);
+  lsSet('diseases', diseases);
+  input.value = '';
+  renderDiseaseList();
+  updateHealthScore();
+  showToast('已添加');
+}
+function removeDisease(idx) { const diseases = lsGet('diseases') || []; diseases.splice(idx, 1); lsSet('diseases', diseases); renderDiseaseList(); }
+function renderAllergyLists() {
+  const allergies = lsGet('allergies') || { drug: [], food: [], env: [] };
+  ['drug', 'food', 'env'].forEach(type => {
+    const container = document.getElementById(`allergy-${type}-list`);
+    const items = allergies[type] || [];
+    container.innerHTML = items.map((a, i) => `<span class="tag bg-orange-50 text-orange-500 text-xs">${a} <button onclick="removeAllergy('${type}',${i})" class="ml-1 text-orange-300 hover:text-orange-500">&times;</button></span>`).join('');
+  });
+}
+function addAllergy(type) {
+  const input = document.getElementById(`allergy-${type}-input`);
+  const val = input.value.trim();
+  if (!val) return;
+  const allergies = lsGet('allergies') || { drug: [], food: [], env: [] };
+  if (!allergies[type]) allergies[type] = [];
+  if (allergies[type].includes(val)) { showToast('已存在'); return; }
+  allergies[type].push(val);
+  lsSet('allergies', allergies);
+  input.value = '';
+  renderAllergyLists();
+  updateHealthScore();
+  showToast('已添加');
+}
+function removeAllergy(type, idx) { const allergies = lsGet('allergies') || { drug: [], food: [], env: [] }; allergies[type].splice(idx, 1); lsSet('allergies', allergies); renderAllergyLists(); }
+function generateShareCode() {
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  lsSet('share_code', code);
+  document.getElementById('my-share-code').textContent = code;
+  showToast('分享码已生成');
+}
+function renderShareCode() { const code = lsGet('share_code'); if (code) document.getElementById('my-share-code').textContent = code; }
+function exportData() {
+  const data = { profile: lsGet('profile') || {}, diseases: lsGet('diseases') || [], allergies: lsGet('allergies') || {}, feedbacks: lsGet('feedbacks') || [], testResult: lsGet('test_result'), scoreHistory: lsGet('score_history') || [], checkins: lsGet('checkins') || {}, myPlan: lsGet('my_plan') || [], exportedAt: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = `知体知医_健康档案_${getDateStr(Date.now())}.json`; a.click();
+  URL.revokeObjectURL(url);
+  showToast('档案已导出');
+}
+
+// ========== 提分页 ==========
+let currentImproveTab = 'learn';
+let calendarDate = new Date();
+function switchImproveTab(tab) {
+  currentImproveTab = tab;
+  ['learn', 'plan', 'checkin'].forEach(t => {
+    document.getElementById(`improve-${t}`).classList.toggle('hidden', t !== tab);
+    const tabBtn = document.getElementById(`tab-${t}`);
+    if (t === tab) { tabBtn.classList.add('text-primary', 'border-primary'); tabBtn.classList.remove('text-gray-400', 'border-transparent'); }
+    else { tabBtn.classList.remove('text-primary', 'border-primary'); tabBtn.classList.add('text-gray-400', 'border-transparent'); }
+  });
+  if (tab === 'checkin') { renderCalendar(); renderTodayPlanList(); renderBadges(); renderScoreChart(); }
+  if (tab === 'plan') renderMyPlan();
+}
+
+// ========== 学习：只根据个人疾病推荐 ==========
+function renderDiseaseAccordion() {
+  const diseases = lsGet('diseases') || [];
+  const container = document.getElementById('disease-accordion');
+  const noDiseaseTip = document.getElementById('no-disease-tip');
+  
+  // 只显示用户已有的疾病
+  const userDiseases = diseases.filter(d => DISEASE_DB[d]);
+  
+  if (userDiseases.length === 0) {
+    container.innerHTML = '';
+    noDiseaseTip.classList.remove('hidden');
+    return;
+  }
+  noDiseaseTip.classList.add('hidden');
+  
+  container.innerHTML = userDiseases.map(name => {
+    const data = DISEASE_DB[name];
+    return `<div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+      <button onclick="toggleAccordion(this)" class="w-full flex items-center gap-3 p-4 text-left">
+        <span class="text-2xl">${data.icon}</span>
+        <span class="font-semibold text-gray-800 text-sm flex-1">${name}</span>
+        <svg class="w-4 h-4 text-gray-400 transition-transform accordion-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="accordion-body">
+        <div class="px-4 pb-4 space-y-3">
+          ${data.department ? `<div class="flex items-center gap-2 mb-2"><span class="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-full">🏥 推荐科室：${data.department}</span>${data.recommendedTests ? `<span class="text-xs bg-purple-50 text-purple-600 px-2 py-1 rounded-full">📋 建议检查：${data.recommendedTests.slice(0,3).join('、')}${data.recommendedTests.length > 3 ? '...' : ''}</span>` : ''}</div>` : ''}
+          <div class="sub-card"><h4 class="text-xs font-semibold text-gray-500 mb-1">发病原因</h4><p class="text-xs text-gray-600 leading-relaxed">${data.cause}</p></div>
+          <div class="sub-card"><h4 class="text-xs font-semibold text-gray-500 mb-1">发病机理</h4><p class="text-xs text-gray-600 leading-relaxed">${data.mechanism}</p></div>
+          <div class="sub-card"><h4 class="text-xs font-semibold text-gray-500 mb-1">诊断标准</h4><p class="text-xs text-gray-600 leading-relaxed">${data.diagnosis}</p></div>
+          <div class="sub-card"><h4 class="text-xs font-semibold text-gray-500 mb-1">西医治疗</h4><p class="text-xs text-gray-600 leading-relaxed">${data.treatment}</p></div>
+          <div class="sub-card"><h4 class="text-xs font-semibold text-gray-500 mb-1">中医证型分类</h4><p class="text-xs text-gray-600 leading-relaxed">${data.tcm}</p></div>
+          <div class="border-t border-gray-100 pt-3">
+            <h4 class="text-xs font-semibold text-gray-500 mb-2">生活建议</h4>
+            ${Object.entries(data.cards).map(([key, card]) => `
+              <div class="sub-card">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="flex items-center gap-2"><span>${card.icon}</span><span class="text-sm font-semibold text-gray-700">${card.title}</span></div>
+                  <button onclick="addToPlan('${name}','${key}','${card.title}')" class="text-xs bg-primary text-white px-3 py-1 rounded-full hover:bg-primary-dark transition-colors">+ 加入计划</button>
+                </div>
+                ${key === 'diet' ? `<div class="mb-2"><span class="text-xs text-green-600 font-semibold">宜吃：</span><div class="flex flex-wrap gap-1 mt-1">${card.recommend.map(r => `<span class="text-xs bg-green-50 text-green-600 px-2 py-0.5 rounded">${r}</span>`).join('')}</div></div><div><span class="text-xs text-red-500 font-semibold">忌吃：</span><div class="flex flex-wrap gap-1 mt-1">${card.avoid.map(a => `<span class="text-xs bg-red-50 text-red-500 px-2 py-0.5 rounded">${a}</span>`).join('')}</div></div>` : `<p class="text-xs text-gray-600 leading-relaxed">${card.content}</p>`}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function toggleAccordion(btn) {
+  const body = btn.nextElementSibling;
+  const arrow = btn.querySelector('.accordion-arrow');
+  const isOpen = body.classList.contains('open');
+  document.querySelectorAll('.accordion-body.open').forEach(b => { b.classList.remove('open'); b.previousElementSibling.querySelector('.accordion-arrow').style.transform = ''; });
+  if (!isOpen) { body.classList.add('open'); arrow.style.transform = 'rotate(180deg)'; }
+}
+
+// ========== 我的计划 ==========
+function addToPlan(disease, cardKey, cardTitle) {
+  const planId = `${disease}_${cardKey}`;
+  const myPlan = lsGet('my_plan') || [];
+  if (myPlan.find(p => p.id === planId)) { showToast('已在计划中'); return; }
+  myPlan.push({ id: planId, disease, cardKey, title: `${disease} - ${cardTitle}`, addedAt: Date.now(), completed: false });
+  lsSet('my_plan', myPlan);
+  showToast('已加入我的计划');
+}
+function renderMyPlan() {
+  const myPlan = lsGet('my_plan') || [];
+  const container = document.getElementById('my-plan-list');
+  const emptyEl = document.getElementById('plan-empty');
+  if (myPlan.length === 0) { container.innerHTML = ''; emptyEl.classList.remove('hidden'); return; }
+  emptyEl.classList.add('hidden');
+  const today = getDateStr(Date.now());
+  const todayCompleted = lsGet('today_completed') || {};
+  container.innerHTML = myPlan.map((p, i) => {
+    const isCompleted = todayCompleted[today]?.includes(p.id);
+    return `<div class="bg-white rounded-xl p-4 border border-gray-100 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <button onclick="completePlan(${i})" class="w-6 h-6 rounded-full border-2 ${isCompleted ? 'bg-primary border-primary' : 'border-gray-300'} flex items-center justify-center transition-all">
+          ${isCompleted ? '<svg class="w-4 h-4 text-white pop-in" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+        </button>
+        <div>
+          <span class="text-sm font-semibold text-gray-700 ${isCompleted ? 'line-through text-gray-400' : ''}">${p.title}</span>
+          <p class="text-xs text-gray-400 mt-0.5">${formatDate(p.addedAt)} 加入</p>
+        </div>
+      </div>
+      <button onclick="removePlan(${i})" class="text-red-400 hover:text-red-600 text-sm">删除</button>
+    </div>`;
+  }).join('');
+}
+function completePlan(idx) {
+  const myPlan = lsGet('my_plan') || [];
+  const plan = myPlan[idx];
+  if (!plan) return;
+  
+  const today = getDateStr(Date.now());
+  const todayCompleted = lsGet('today_completed') || {};
+  if (!todayCompleted[today]) todayCompleted[today] = [];
+  
+  const completedIdx = todayCompleted[today].indexOf(plan.id);
+  if (completedIdx >= 0) {
+    // 取消完成
+    todayCompleted[today].splice(completedIdx, 1);
+  } else {
+    // 标记完成
+    todayCompleted[today].push(plan.id);
+    showToast(ENCOURAGEMENTS[Math.floor(Math.random() * ENCOURAGEMENTS.length)]);
+    
+    // 检查是否所有计划都完成了，自动打卡
+    if (todayCompleted[today].length >= myPlan.length) {
+      const checkins = lsGet('checkins') || {};
+      if (!checkins[today]) {
+        checkins[today] = true;
+        lsSet('checkins', checkins);
+        showToast('🎉 今日计划全部完成，已自动打卡！');
+      }
+    }
+  }
+  
+  lsSet('today_completed', todayCompleted);
+  renderMyPlan();
+  renderTodayPlanList();
+  renderCalendar();
+  renderBadges();
+  updateHealthScore();
+}
+function removePlan(idx) {
+  const myPlan = lsGet('my_plan') || [];
+  myPlan.splice(idx, 1);
+  lsSet('my_plan', myPlan);
+  renderMyPlan();
+  showToast('已移除');
+}
+
+// ========== 打卡 & 分享 ==========
+function renderCalendar() {
+  const year = calendarDate.getFullYear();
+  const month = calendarDate.getMonth();
+  document.getElementById('calendar-month').textContent = `${year}年${month + 1}月`;
+  const checkins = lsGet('checkins') || {};
+  const firstDay = new Date(year, month, 1);
+  let startDay = firstDay.getDay();
+  startDay = startDay === 0 ? 6 : startDay - 1;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const today = new Date();
+  let html = '';
+  for (let i = 0; i < startDay; i++) html += '<div class="cal-cell"></div>';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const checked = checkins[dateStr];
+    const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === d;
+    const isFuture = new Date(year, month, d) > today;
+    let bg = '#F3F4F6';
+    if (checked) bg = '#3ABFA8';
+    if (isFuture) bg = '#FAFAFA';
+    html += `<div class="cal-cell flex items-center justify-center text-[10px] ${isToday ? 'ring-2 ring-primary ring-offset-1' : ''}" style="background:${bg};color:${checked ? '#fff' : isFuture ? '#D1D5DB' : '#6B7280'}">${d}</div>`;
+  }
+  document.getElementById('calendar-grid').innerHTML = html;
+}
+function changeMonth(delta) { calendarDate.setMonth(calendarDate.getMonth() + delta); renderCalendar(); }
+
+function renderTodayPlanList() {
+  const myPlan = lsGet('my_plan') || [];
+  const today = getDateStr(Date.now());
+  const todayCompleted = lsGet('today_completed') || {};
+  const completedIds = todayCompleted[today] || [];
+  
+  const container = document.getElementById('today-plan-list');
+  const progressEl = document.getElementById('checkin-progress');
+  const tipEl = document.getElementById('checkin-tip');
+  
+  if (myPlan.length === 0) {
+    container.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">暂无计划，去"学习"添加吧</p>';
+    progressEl.textContent = '';
+    tipEl.textContent = '';
+    return;
+  }
+  
+  const completed = completedIds.length;
+  const total = myPlan.length;
+  progressEl.textContent = `${completed}/${total} 完成`;
+  
+  container.innerHTML = myPlan.map(p => {
+    const isCompleted = completedIds.includes(p.id);
+    return `<div class="flex items-center gap-2 py-1">
+      <span class="${isCompleted ? 'text-green-500' : 'text-gray-300'}">${isCompleted ? '✅' : '⬜'}</span>
+      <span class="text-sm ${isCompleted ? 'text-gray-400 line-through' : 'text-gray-600'}">${p.title}</span>
+    </div>`;
+  }).join('');
+  
+  if (completed >= total) {
+    tipEl.textContent = '🎉 今日计划全部完成，已自动打卡！';
+    tipEl.className = 'text-xs text-green-500 text-center font-semibold';
+  } else {
+    tipEl.textContent = '完成所有计划后自动打卡';
+    tipEl.className = 'text-xs text-gray-400 text-center';
+  }
+}
+
+function renderBadges() {
+  const checkins = lsGet('checkins') || {};
+  let streak = 0;
+  const d = new Date();
+  while (true) { if (checkins[getDateStr(d.getTime())]) { streak++; d.setDate(d.getDate() - 1); } else break; }
+  [['badge-3', 3, 'bg-yellow-100 text-yellow-700'], ['badge-7', 7, 'bg-orange-100 text-orange-700'], ['badge-30', 30, 'bg-purple-100 text-purple-700']].forEach(([id, days, cls]) => {
+    const el = document.getElementById(id);
+    if (streak >= days) el.className = `badge ${cls}`;
+    else el.className = 'badge bg-gray-100 text-gray-400';
+  });
+}
+
+function shareAchievement() {
+  const { total } = calculateHealthScore();
+  const checkins = lsGet('checkins') || {};
+  let streak = 0;
+  const d = new Date();
+  while (true) { if (checkins[getDateStr(d.getTime())]) { streak++; d.setDate(d.getDate() - 1); } else break; }
+  const text = `我在「知体知医」的健康分是${total}分，已连续打卡${streak}天！一起来关注健康吧~`;
+  if (navigator.share) navigator.share({ title: '知体知医 - 健康成就', text }).catch(() => {});
+  else navigator.clipboard?.writeText(text).then(() => showToast('已复制到剪贴板')).catch(() => showToast('分享功能不可用'));
+}
+
+function renderScoreChart() {
+  const canvas = document.getElementById('score-chart');
+  const ctx = canvas.getContext('2d');
+  const history = lsGet('score_history') || [];
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = (rect.width - 32) * dpr;
+  canvas.height = 200 * dpr;
+  canvas.style.width = (rect.width - 32) + 'px';
+  canvas.style.height = '200px';
+  ctx.scale(dpr, dpr);
+  const w = rect.width - 32, h = 200;
+  const padding = { top: 20, right: 15, bottom: 30, left: 35 };
+  ctx.clearRect(0, 0, w, h);
+  if (history.length < 2) { ctx.fillStyle = '#9CA3AF'; ctx.font = '13px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('至少需要2天数据才能显示趋势', w / 2, h / 2); return; }
+  const data = history.slice(-14);
+  const scores = data.map(d => d.score);
+  const minScore = Math.max(0, Math.min(...scores) - 10);
+  const maxScore = Math.min(100, Math.max(...scores) + 10);
+  const range = maxScore - minScore || 1;
+  const chartW = w - padding.left - padding.right, chartH = h - padding.top - padding.bottom;
+  ctx.strokeStyle = '#F3F4F6'; ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) { const y = padding.top + (chartH / 4) * i; ctx.beginPath(); ctx.moveTo(padding.left, y); ctx.lineTo(w - padding.right, y); ctx.stroke(); ctx.fillStyle = '#9CA3AF'; ctx.font = '10px sans-serif'; ctx.textAlign = 'right'; ctx.fillText(Math.round(maxScore - (range / 4) * i), padding.left - 5, y + 3); }
+  const points = scores.map((s, i) => ({ x: padding.left + (chartW / (data.length - 1)) * i, y: padding.top + chartH - ((s - minScore) / range) * chartH }));
+  const gradient = ctx.createLinearGradient(0, padding.top, 0, h - padding.bottom);
+  gradient.addColorStop(0, 'rgba(58, 191, 168, 0.3)');
+  gradient.addColorStop(1, 'rgba(58, 191, 168, 0.02)');
+  ctx.beginPath(); ctx.moveTo(points[0].x, h - padding.bottom); points.forEach(p => ctx.lineTo(p.x, p.y)); ctx.lineTo(points[points.length - 1].x, h - padding.bottom); ctx.closePath(); ctx.fillStyle = gradient; ctx.fill();
+  ctx.beginPath(); ctx.moveTo(points[0].x, points[0].y);
+  for (let i = 1; i < points.length; i++) { const xc = (points[i - 1].x + points[i].x) / 2; const yc = (points[i - 1].y + points[i].y) / 2; ctx.quadraticCurveTo(points[i - 1].x, points[i - 1].y, xc, yc); }
+  ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+  ctx.strokeStyle = '#3ABFA8'; ctx.lineWidth = 2.5; ctx.stroke();
+  points.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill(); ctx.strokeStyle = '#3ABFA8'; ctx.lineWidth = 2; ctx.stroke(); });
+}
+
+// ========== 欢迎弹窗 ==========
+let testDiseases = [];
+function showWelcome() { testDiseases = []; document.getElementById('welcome-modal').classList.remove('hidden'); }
+function selectChoice(el, group) { el.parentElement.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected')); el.classList.add('selected'); }
+function toggleDisease(el) {
+  const disease = el.dataset.disease;
+  const idx = testDiseases.indexOf(disease);
+  if (idx >= 0) { testDiseases.splice(idx, 1); el.classList.remove('bg-primary-light', 'text-primary', 'ring-1', 'ring-primary'); el.classList.add('bg-gray-100', 'text-gray-600'); }
+  else { testDiseases.push(disease); el.classList.remove('bg-gray-100', 'text-gray-600'); el.classList.add('bg-primary-light', 'text-primary', 'ring-1', 'ring-primary'); }
+}
+function finishWelcome() {
+  const nickname = document.getElementById('welcome-nickname').value.trim();
+  const age = document.getElementById('welcome-age').value;
+  const genderEl = document.querySelector('#welcome-modal .choice-btn.selected');
+  const gender = genderEl ? genderEl.dataset.value : '';
+  const allergy = document.getElementById('welcome-allergy').value.trim();
+  if (!nickname) { showToast('请输入昵称'); return; }
+  const profile = { nickname, age, gender };
+  lsSet('profile', profile);
+  if (testDiseases.length > 0) lsSet('diseases', [...testDiseases]);
+  else lsSet('diseases', []);
+  if (allergy) { const items = allergy.split(/[,，、\s]+/).filter(Boolean); lsSet('allergies', { drug: items, food: [], env: [] }); }
+  lsSet('welcomed', true);
+  document.getElementById('welcome-modal').classList.add('hidden');
+  initHome();
+  showToast(`欢迎你，${nickname}！`);
+}
+
+// ========== ESC 关闭模态框 ==========
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { ['modal-feedback', 'modal-test'].forEach(id => { if (document.getElementById(id).classList.contains('show')) closeModal(id); }); } });
+
+// ========== 应用初始化 ==========
+function initApp() {
+  setTimeout(() => {
+    document.getElementById('skeleton-screen').style.opacity = '0';
+    document.getElementById('skeleton-screen').style.transition = 'opacity 0.5s';
+    setTimeout(() => {
+      document.getElementById('skeleton-screen').style.display = 'none';
+      document.getElementById('app').style.opacity = '1';
+      const welcomed = lsGet('welcomed');
+      if (!welcomed) showWelcome();
+      else initHome();
+    }, 500);
+  }, 1200);
+}
+document.addEventListener('DOMContentLoaded', initApp);
+</script>
+</body>
+</html>
