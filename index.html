@@ -372,6 +372,19 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
     </div>
   </div>
 
+  <!-- 疾病详情弹窗 -->
+  <div id="modal-disease-detail" class="modal-overlay" onclick="closeOnOverlay(event,'modal-disease-detail')">
+    <div class="modal-content max-w-md mx-4" onclick="event.stopPropagation()">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-gray-800">疾病详情</h3>
+        <button onclick="closeModal('modal-disease-detail')" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div id="disease-detail-content" class="max-h-96 overflow-y-auto"></div>
+    </div>
+  </div>
+
   <!-- 欢迎弹窗 -->
   <div id="welcome-modal" class="welcome-overlay hidden">
     <div class="welcome-box">
@@ -12017,35 +12030,65 @@ let homeTestResults = {};
 let hospitalTestResults = {};
 
 function openTest() {
-  // 获取风险疾病优先
   var diseaseRisks = lsGet('disease_risks') || {};
   var diseases = lsGet('diseases') || [];
-  
-  // 合并风险疾病和疾病史，风险疾病优先
+
   var allDiseases = Object.keys(diseaseRisks);
   diseases.forEach(function(d) { if (!allDiseases.includes(d)) allDiseases.push(d); });
-  
+
   if (allDiseases.length === 0) {
     showToast('请先在档案设置疾病史或在反馈中描述症状');
     return;
   }
-  
-  // 选择第一个风险最高的疾病开始测试
+
+  // 渲染疾病选择列表（带历史风险百分比）
+  var testReports = lsGet('test_reports') || [];
+  var container = document.getElementById('test-content');
+
+  var html = '<div class="mb-4"><h3 class="text-sm font-semibold text-gray-700">选择要测试的疾病</h3></div>';
+  html += '<div class="space-y-2">';
+
+  allDiseases.forEach(function(disease) {
+    var risk = diseaseRisks[disease];
+    var latestReport = null;
+    testReports.forEach(function(r) { if (r.disease === disease) latestReport = r; });
+    var riskPercent = latestReport ? latestReport.riskScore : (risk ? (risk.level === 'critical' ? 80 : risk.level === 'high' ? 60 : risk.level === 'medium' ? 40 : 20) : null);
+
+    var riskColor = riskPercent >= 60 ? 'text-red-500' : riskPercent >= 30 ? 'text-orange-500' : riskPercent !== null ? 'text-green-500' : 'text-gray-400';
+
+    html += '<button onclick="startDiseaseTest(\'' + disease + '\')" class="w-full bg-gray-50 rounded-xl p-4 text-left hover:bg-gray-100 transition-colors flex items-center justify-between">';
+    html += '<div><span class="font-medium text-gray-700 text-sm">' + disease + '</span>';
+    if (latestReport) {
+      var date = new Date(latestReport.timestamp);
+      html += '<p class="text-xs text-gray-400 mt-0.5">上次测试: ' + (date.getMonth()+1) + '/' + date.getDate() + '</p>';
+    }
+    html += '</div>';
+    if (riskPercent !== null) {
+      html += '<span class="text-lg font-bold ' + riskColor + '">' + riskPercent + '%</span>';
+    }
+    html += '</button>';
+  });
+
+  html += '</div>';
+  html += '<div class="mt-4"><button onclick="closeModal(\'modal-test\')" class="w-full px-4 py-2 bg-gray-100 text-gray-600 rounded-lg">取消</button></div>';
+
+  container.innerHTML = html;
+  openModal('modal-test');
+}
+
+function startDiseaseTest(disease) {
   testState = {
-    disease: allDiseases[0],
+    disease: disease,
     stage: 1,
     questionnaireResults: {},
     homeTestResults: {},
     hospitalTestResults: {},
     riskScore: 0
   };
-  
   questionnaireAnswers = {};
   homeTestResults = {};
   hospitalTestResults = {};
-  
   renderTestStage();
-  openModal('modal-test');
 }
 
 function renderTestStage() {
@@ -12493,7 +12536,9 @@ function saveTestReport() {
     timestamp: Date.now()
   };
   
-  lsSet('test_report', report);
+  var testReports = lsGet('test_reports') || [];
+  testReports.push(report);
+  lsSet('test_reports', testReports);
   
   // 更新疾病风险
   if (riskPercent >= 30) {
@@ -12546,8 +12591,114 @@ function renderKeywords() {
   else container.innerHTML = [...keywords].map(k => `<span class="tag bg-primary-light text-primary text-xs">${k}</span>`).join('');
 }
 function renderDiseaseList() {
-  const diseases = lsGet('diseases') || [];
-  document.getElementById('disease-list').innerHTML = diseases.map((d, i) => `<span class="tag bg-red-50 text-red-500 text-xs">${d} <button onclick="removeDisease(${i})" class="ml-1 text-red-300 hover:text-red-500">&times;</button></span>`).join('');
+  var diseases = lsGet('diseases') || [];
+  var diseaseRisks = lsGet('disease_risks') || {};
+  var testReports = lsGet('test_reports') || [];
+  var container = document.getElementById('disease-list');
+
+  // 合并手动疾病和风险疾病
+  var allDiseases = new Set(diseases);
+  Object.keys(diseaseRisks).forEach(function(d) { allDiseases.add(d); });
+
+  if (allDiseases.size === 0) {
+    container.innerHTML = '<span class="text-xs text-gray-400">暂无数据</span>';
+    return;
+  }
+
+  var html = '';
+
+  // 先显示风险疾病（带百分比）
+  var riskEntries = Object.entries(diseaseRisks).sort(function(a, b) {
+    var levelOrder = { 'critical': 0, 'high': 1, 'medium': 2, 'low': 3 };
+    return (levelOrder[a[1].level] || 3) - (levelOrder[b[1].level] || 3);
+  });
+
+  if (riskEntries.length > 0) {
+    html += '<div class="mb-2"><span class="text-xs text-gray-500 font-medium">系统识别风险</span></div>';
+    riskEntries.forEach(function(entry) {
+      var name = entry[0];
+      var risk = entry[1];
+      var level = risk.level || 'low';
+      var levelColors = { 'critical': 'bg-red-100 text-red-600', 'high': 'bg-orange-100 text-orange-600', 'medium': 'bg-yellow-100 text-yellow-600', 'low': 'bg-blue-100 text-blue-600' };
+      var levelLabels = { 'critical': '极高', 'high': '高', 'medium': '中', 'low': '低' };
+
+      // 查找最近的测试报告
+      var latestReport = null;
+      testReports.forEach(function(r) { if (r.disease === name) latestReport = r; });
+      var riskPercent = latestReport ? latestReport.riskScore : (level === 'critical' ? 80 : level === 'high' ? 60 : level === 'medium' ? 40 : 20);
+
+      html += '<button onclick="viewDiseaseDetail(\'' + name + '\')" class="tag ' + (levelColors[level] || 'bg-gray-100 text-gray-600') + ' text-xs cursor-pointer hover:opacity-80 transition-opacity">' +
+        name + ' ' + riskPercent + '% ' + (levelLabels[level] || '') +
+        '</button>';
+    });
+  }
+
+  // 再显示手动添加的疾病（非风险的）
+  var manualDiseases = diseases.filter(function(d) { return !diseaseRisks[d]; });
+  if (manualDiseases.length > 0) {
+    html += '<div class="mb-2 mt-2"><span class="text-xs text-gray-500 font-medium">手动添加</span></div>';
+    manualDiseases.forEach(function(d, i) {
+      html += '<span class="tag bg-red-50 text-red-500 text-xs">' + d + ' <button onclick="removeDisease(' + diseases.indexOf(d) + ')" class="ml-1 text-red-300 hover:text-red-500">&times;</button></span>';
+    });
+  }
+
+  container.innerHTML = html;
+}
+function viewDiseaseDetail(disease) {
+  var diseaseRisks = lsGet('disease_risks') || {};
+  var testReports = lsGet('test_reports') || [];
+  var risk = diseaseRisks[disease];
+  var data = DISEASE_DB[disease];
+
+  if (!data) { showToast('暂无该疾病详细信息'); return; }
+
+  // 查找该疾病的测试报告
+  var reports = testReports.filter(function(r) { return r.disease === disease; });
+
+  var html = '<div class="space-y-4">';
+  html += '<div class="flex items-center gap-3"><span class="text-3xl">' + data.icon + '</span><div><h3 class="font-bold text-gray-800">' + disease + '</h3>';
+  if (risk) {
+    var level = risk.level || 'low';
+    var levelLabels = { 'critical': '极高', 'high': '高', 'medium': '中', 'low': '低' };
+    html += '<span class="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-600">风险等级: ' + (levelLabels[level] || '低') + '</span>';
+  }
+  html += '</div></div>';
+
+  if (data.department) {
+    html += '<div class="bg-blue-50 rounded-lg p-3"><p class="text-xs text-blue-700"><strong>推荐科室：</strong>' + data.department + '</p>';
+    if (data.recommendedTests) html += '<p class="text-xs text-blue-700 mt-1"><strong>建议检查：</strong>' + data.recommendedTests.join('、') + '</p>';
+    html += '</div>';
+  }
+
+  // 显示测试报告
+  if (reports.length > 0) {
+    html += '<div class="border-t pt-3"><h4 class="text-sm font-semibold text-gray-700 mb-2">测试报告</h4>';
+    reports.forEach(function(report) {
+      var date = new Date(report.timestamp);
+      var dateStr = date.getFullYear() + '-' + String(date.getMonth()+1).padStart(2,'0') + '-' + String(date.getDate()).padStart(2,'0') + ' ' + String(date.getHours()).padStart(2,'0') + ':' + String(date.getMinutes()).padStart(2,'0');
+      var color = report.riskScore >= 60 ? 'text-red-500' : report.riskScore >= 30 ? 'text-orange-500' : 'text-green-500';
+      html += '<div class="bg-gray-50 rounded-lg p-3 mb-2">';
+      html += '<div class="flex items-center justify-between mb-1"><span class="text-xs text-gray-500">' + dateStr + '</span><span class="text-lg font-bold ' + color + '">' + report.riskScore + '%</span></div>';
+
+      if (report.questionnaireResults && Object.keys(report.questionnaireResults).length > 0) {
+        html += '<p class="text-xs text-gray-500">问询: ' + Object.keys(report.questionnaireResults).length + '项</p>';
+      }
+      if (report.homeTestResults && Object.keys(report.homeTestResults).length > 0) {
+        html += '<p class="text-xs text-gray-500">居家测试: ' + Object.keys(report.homeTestResults).length + '项</p>';
+      }
+      if (report.hospitalTestResults && Object.keys(report.hospitalTestResults).length > 0) {
+        html += '<p class="text-xs text-gray-500">医院检测: ' + Object.keys(report.hospitalTestResults).length + '项</p>';
+      }
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
+  html += '<button onclick="goToTestForDisease(\'' + disease + '\')" class="w-full mt-3 px-4 py-2 bg-primary text-white rounded-lg text-sm">重新测试</button>';
+  html += '</div>';
+
+  document.getElementById('disease-detail-content').innerHTML = html;
+  openModal('modal-disease-detail');
 }
 function addDisease() {
   const input = document.getElementById('disease-input');
@@ -12689,9 +12840,57 @@ function renderDiseaseAccordion() {
               var key = entry[0]; var card = entry[1];
               var dietHtml = '';
               if (key === 'diet') {
+                var recipeSuggestions = {
+                  '高血压': '推荐食谱：①芹菜炒百合（芹菜200g+百合50g，清炒，降血压）；②山楂决明子茶（山楂10g+决明子10g，开水冲泡代茶饮）；③凉拌黑木耳（黑木耳100g+洋葱50g+少许醋，凉拌食用）。',
+                  '糖尿病': '推荐食谱：①苦瓜炒鸡蛋（苦瓜200g+鸡蛋1个，少油清炒）；②山药薏仁粥（山药50g+薏仁30g+大米50g，煮粥）；③凉拌黄瓜（黄瓜200g+蒜末+少许醋，凉拌）。',
+                  '胃炎': '推荐食谱：①小米南瓜粥（小米50g+南瓜100g，煮粥，养胃）；②山药莲子粥（山药50g+莲子20g+大米50g，健脾养胃）；③猴头菇炖鸡汤（猴头菇50g+鸡肉200g，小火炖2小时）。',
+                  '十二指肠溃疡': '推荐食谱：①山药莲子粥（山药50g+莲子20g+大米50g，健脾护胃）；②猴头菇炖鸡汤（猴头菇50g+鸡肉200g，小火炖2小时，促进溃疡愈合）；③蜂蜜水（温水冲服蜂蜜1勺，晨起空腹饮用，保护胃黏膜）。注意：避免空腹食用刺激性食物。',
+                  '失眠': '推荐食谱：①酸枣仁粥（酸枣仁30g+大米50g，煮粥，安神助眠）；②百合莲子羹（百合30g+莲子20g+冰糖适量，炖煮）；③桂圆红枣茶（桂圆5个+红枣3个，开水冲泡，睡前1小时饮用）。',
+                  '冠心病': '推荐食谱：①山楂粥（山楂30g+大米50g，煮粥，活血化瘀）；②黑木耳炒芹菜（黑木耳100g+芹菜200g，清炒）；③三七粉冲服（三七粉3g+温水冲服，每日1次）。',
+                  '贫血': '推荐食谱：①红枣桂圆粥（红枣10个+桂圆肉30g+大米50g，煮粥）；②菠菜猪肝汤（菠菜200g+猪肝100g，煮汤）；③当归羊肉汤（当归10g+羊肉200g，炖煮2小时）。'
+                };
                 dietHtml = '<div class="mb-2"><span class="text-xs text-green-600 font-semibold">宜吃：</span><div class="flex flex-wrap gap-1 mt-1">' + card.recommend.map(function(r) { return '<span class="text-xs bg-green-50 text-green-600 px-2 py-0.5 rounded">' + r + '</span>'; }).join('') + '</div></div><div><span class="text-xs text-red-500 font-semibold">忌吃：</span><div class="flex flex-wrap gap-1 mt-1">' + card.avoid.map(function(a) { return '<span class="text-xs bg-red-50 text-red-500 px-2 py-0.5 rounded">' + a + '</span>'; }).join('') + '</div></div>';
+                var recipe = recipeSuggestions[name];
+                if (recipe) {
+                  dietHtml += '<div class="mt-2 p-2 bg-green-50 rounded-lg"><p class="text-xs text-green-700 font-medium mb-1">推荐食谱</p><p class="text-xs text-green-600">' + recipe + '</p></div>';
+                }
               } else {
-                dietHtml = '<p class="text-xs text-gray-600 leading-relaxed">' + card.content + '</p>';
+                var exerciseContent = card.content;
+                // 为运动处方添加更具体的中医指导
+                if (key === 'exercise') {
+                  var tcmExercises = {
+                    '高血压': '1. 太极拳：每日练习24式简化太极拳，每次15-20分钟，动作缓慢柔和，配合深呼吸。重点练习"云手"和"单鞭"动作。\n2. 八段锦：每日1-2遍，重点练习"摇头摆尾去心火"和"两手攀足固肾腰"。\n3. 按摩涌泉穴：每晚睡前用拇指按揉足底涌泉穴（足底前1/3凹陷处），每侧3分钟，至有酸胀感。\n4. 深呼吸法：每日3次，每次5分钟。吸气4秒-屏气4秒-呼气6秒。',
+                    '糖尿病': '1. 八段锦：每日1-2遍，重点练习"调理脾胃须单举"，促进脾胃运化功能。\n2. 太极拳：每日练习15-20分钟，以意导气，促进气血运行。\n3. 耳部按摩：双手搓热后按摩耳廓，每日3次，每次2分钟。刺激内分泌相关穴位。\n4. 转腰运动：双手叉腰，顺时针和逆时针各转腰20圈，每日2次。',
+                    '失眠': '1. 安神功：盘坐，闭目，舌抵上腭，意守丹田，自然呼吸，每日睡前练习15-20分钟。\n2. 搓涌泉穴：每晚睡前用手掌搓足底涌泉穴，每侧100次，至足底发热。\n3. 叩齿吞津：每日早晚各做36次叩齿，然后分3次吞咽口中津液。\n4. 八段锦"两手攀足固肾腰"：每日练习10次，有助于交通心肾，安神助眠。',
+                    '颈椎病': '1. 颈椎操：①颈部米字操：头部分别向前、后、左、右各缓慢转动5次，再顺时针和逆时针各转动5圈。②颈部对抗：双手放在前额，头向前用力，手向后推，保持5秒，重复10次。\n2. 八段锦"五劳七伤往后瞧"：每日练习10次，有助于颈部活动。\n3. 大鹏展翅：双臂侧平举，掌心向上，然后用力向后展开，保持3秒，重复10次。',
+                    '腰椎间盘突出': '1. 五禽戏"鹿戏"：模仿鹿的姿势，腰部左右扭转，每日练习10-15分钟。\n2. 八段锦"两手攀足固肾腰"：每日练习10次，增强腰背肌力量。\n3. 飞燕式：俯卧，双手放在身体两侧，头胸和双腿同时抬起，保持3-5秒，重复10次。\n4. 拱桥式：仰卧，双膝弯曲，双足踩床，臀部抬起使身体呈拱桥状，保持5秒，重复10次。',
+                    '胃炎': '1. 八段锦"调理脾胃须单举"：每日练习10次，一手上托一手下按，交替进行。\n2. 腹部按摩：仰卧，双手叠放于腹部，顺时针方向按摩36圈，再逆时针36圈。每日早晚各1次。\n3. 足三里穴按摩：每日按揉双侧足三里穴（膝下3寸，胫骨外1横指），每侧3分钟。\n4. 呼吸吐纳：腹式呼吸，吸气时腹部鼓起，呼气时腹部收缩，每日练习10分钟。',
+                    '十二指肠溃疡': '1. 腹部按摩：仰卧，双手叠放于上腹部（胃脘部），顺时针轻柔按摩36圈，力度适中。每日早晚各1次，餐后1小时进行。\n2. 足三里穴按摩：每日按揉双侧足三里穴（膝下3寸，胫骨外1横指），每侧3分钟，健脾和胃。\n3. 内关穴按摩：每日按揉双侧内关穴（腕横纹上2寸，两筋之间），每侧2分钟，理气止痛。\n4. 八段锦"调理脾胃须单举"：每日练习10次，一手上托一手下按，调和脾胃气机。',
+                    '冠心病': '1. 太极拳：每日练习24式简化太极拳15-20分钟，动作缓慢均匀，配合自然呼吸。\n2. 八段锦"左右开弓似射雕"：每日练习10次，扩胸理气。\n3. 内关穴按摩：每日按揉双侧内关穴（腕横纹上2寸），每侧3分钟，宁心安神。\n4. 散步：每日餐后30分钟散步20-30分钟，速度适中，不宜过快。',
+                    '焦虑症': '1. 六字诀"呵"字功：站立，吸气后呼气时发"呵"音，每日练习6-12次，清心火、安心神。\n2. 八段锦"摇头摆尾去心火"：每日练习10次，清心泻火。\n3. 太极拳：每日练习15-20分钟，以意导气，放松身心。\n4. 腹式呼吸：每日练习10分钟，吸气4秒-屏气4秒-呼气6秒，安定心神。',
+                    '抑郁症': '1. 八段锦全套：每日练习1-2遍，疏通经络，调理气血。\n2. 太极拳：每日练习15-20分钟，以意导气，调和阴阳。\n3. 晒太阳：每日上午9-10点晒太阳20分钟，补充阳气。\n4. 散步：每日户外散步30分钟，配合深呼吸。',
+                    '痛风': '1. 太极拳：每日练习15-20分钟，促进气血运行，有助于尿酸排泄。\n2. 关节活动操：①趾关节：逐个活动脚趾，每个方向5次。②踝关节：顺时针和逆时针各转动10圈。每日2次。\n3. 多饮水：每日饮水2000ml以上，促进尿酸排泄。',
+                    '偏头痛': '1. 风池穴按摩：双手拇指按揉风池穴（后脑勺两侧凹陷处），每侧3分钟，疏风止痛。\n2. 合谷穴按摩：每日按揉双侧合谷穴（虎口处），每侧2分钟，通经止痛。\n3. 八段锦"五劳七伤往后瞧"：每日练习10次，活动颈椎，疏通经络。',
+                    '贫血': '1. 八段锦全套：每日练习1-2遍，促进气血生成。\n2. 足三里穴按摩：每日按揉双侧足三里穴，每侧3分钟，健脾益气。\n3. 三阴交穴按摩：每日按揉双侧三阴交穴（内踝上3寸），每侧3分钟，补血养血。\n4. 散步：每日散步30分钟，促进气血运行。',
+                    '甲状腺功能亢进': '1. 太极拳：每日练习15-20分钟，动作柔和，不宜剧烈运动。\n2. 八段锦"两手攀足固肾腰"：每日练习10次，滋阴降火。\n3. 腹式呼吸：每日练习10分钟，平复心气。\n4. 避免剧烈运动和过度劳累。',
+                    '甲状腺功能减退': '1. 八段锦全套：每日练习1-2遍，温阳益气。\n2. 足三里穴按摩：每日按揉双侧足三里穴，每侧3分钟，健脾温阳。\n3. 关元穴按摩：每日按揉关元穴（脐下3寸），3分钟，温补肾阳。\n4. 晒太阳：每日上午晒太阳20分钟，补充阳气。',
+                    '类风湿关节炎': '1. 太极拳：每日练习15-20分钟，动作缓慢柔和，保持关节活动度。\n2. 关节活动操：逐个活动受累关节，每个方向5-10次，每日2次。\n3. 八段锦"左右开弓似射雕"：每日练习10次，扩胸理气。\n4. 热敷：运动前热敷关节15分钟，促进血液循环。',
+                    '骨质疏松': '1. 八段锦"两手攀足固肾腰"：每日练习10次，强筋壮骨。\n2. 太极拳：每日练习15-20分钟，增强平衡能力。\n3. 踮脚运动：每日踮脚站立30秒，重复10次，增强下肢力量。\n4. 散步：每日户外散步30分钟，适当晒太阳促进钙吸收。',
+                    '过敏性鼻炎': '1. 迎香穴按摩：双手食指按揉迎香穴（鼻翼旁鼻唇沟中），每侧2分钟，通鼻窍。\n2. 八段锦"左右开弓似射雕"：每日练习10次，宣肺理气。\n3. 搓鼻法：双手搓热后，沿鼻梁两侧上下搓擦36次，每日3次。\n4. 腹式呼吸：每日练习10分钟，增强肺功能。',
+                    '哮喘': '1. 六字诀"呬"字功：站立，呼气时发"呬"音，每日练习6-12次，补益肺气。\n2. 八段锦"左右开弓似射雕"：每日练习10次，扩胸理气。\n3. 腹式呼吸：每日练习10-15分钟，增强肺活量。\n4. 太极拳：每日练习15-20分钟，柔和运动。',
+                    '脂肪肝': '1. 八段锦全套：每日练习1-2遍，促进气血运行，消导积滞。\n2. 仰卧起坐：每日3组，每组15-20个，增强腹部肌肉。\n3. 足三里穴按摩：每日按揉双侧足三里穴，每侧3分钟，健脾化湿。\n4. 快走：每日快走30-40分钟，促进脂肪代谢。',
+                    '慢性肾病': '1. 八段锦"两手攀足固肾腰"：每日练习10次，固肾强腰。\n2. 太极拳：每日练习15-20分钟，柔和运动，不宜剧烈。\n3. 涌泉穴按摩：每晚搓涌泉穴，每侧100次，温补肾阳。\n4. 避免剧烈运动，控制运动量。',
+                    '湿疹': '1. 八段锦全套：每日练习1遍，调和气血。\n2. 散步：每日散步30分钟，适度运动促进排汗。\n3. 避免剧烈运动和过度出汗。\n4. 保持皮肤清洁干燥。',
+                    '前列腺增生': '1. 提肛运动（凯格尔运动）：每日3次，每次收缩肛门30次，每次保持3-5秒。改善盆底肌功能。\n2. 八段锦"两手攀足固肾腰"：每日练习10次，固肾强腰。\n3. 涌泉穴按摩：每晚搓涌泉穴，每侧100次。\n4. 避免久坐，每小时起身活动5分钟。',
+                    '月经失调': '1. 八段锦全套：每日练习1-2遍，调理气血。\n2. 三阴交穴按摩：每日按揉双侧三阴交穴（内踝上3寸），每侧3分钟，调理月经。\n3. 关元穴按摩：每日按揉关元穴（脐下3寸），3分钟，温补下元。\n4. 太极拳：每日练习15-20分钟，调和阴阳。'
+                  };
+
+                  if (tcmExercises[name]) {
+                    exerciseContent = tcmExercises[name];
+                  }
+                }
+
+                dietHtml = '<p class="text-xs text-gray-600 leading-relaxed whitespace-pre-line">' + exerciseContent + '</p>';
               }
               return '<div class="sub-card">' +
                 '<div class="flex items-center justify-between mb-2">' +
@@ -12944,7 +13143,7 @@ function finishWelcome() {
 }
 
 // ========== ESC 关闭模态框 ==========
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { ['modal-feedback', 'modal-test'].forEach(id => { if (document.getElementById(id).classList.contains('show')) closeModal(id); }); } });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { ['modal-feedback', 'modal-test', 'modal-disease-detail'].forEach(id => { if (document.getElementById(id).classList.contains('show')) closeModal(id); }); } });
 
 // ========== 应用初始化 ==========
 function initApp() {
