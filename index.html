@@ -366,29 +366,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
-      <div class="flex items-center justify-center gap-2 mb-6">
-        <div id="test-step-dot-1" class="step-dot active"></div>
-        <div id="test-step-dot-2" class="step-dot"></div>
-      </div>
-      <div id="test-step-1" class="test-step">
-        <h3 class="font-semibold text-gray-700 mb-2">根据您的疾病风险推荐</h3>
-        <p class="text-xs text-gray-400 mb-4">以下自测项目与您的疾病史相关</p>
-        <div id="risk-test-list" class="space-y-4"></div>
-        <div id="no-risk-tip" class="hidden text-center py-8">
-          <p class="text-gray-400 text-sm">暂无需要确认的风险</p>
-          <p class="text-xs text-gray-300 mt-2">请在档案中添加疾病史以获取个性化推荐</p>
-        </div>
-        <div class="flex gap-3 mt-6">
-          <button onclick="closeModal('modal-test')" class="flex-1 border border-gray-200 text-gray-600 py-3 rounded-xl font-semibold">取消</button>
-          <button onclick="testNextStep(2)" class="flex-1 bg-primary text-white py-3 rounded-xl font-semibold">查看结果</button>
-        </div>
-      </div>
-      <div id="test-step-2" class="test-step hidden">
-        <h3 class="font-semibold text-gray-700 mb-4">自测结果</h3>
-        <div id="test-result" class="space-y-3 mb-4"></div>
-        <div id="test-summary-box" class="p-4 rounded-xl mb-4"></div>
-        <button onclick="saveTestResult()" class="w-full bg-primary text-white py-3 rounded-xl font-semibold mb-3">保存到档案</button>
-        <button onclick="closeModal('modal-test')" class="w-full border border-gray-200 text-gray-500 py-3 rounded-xl font-semibold">关闭</button>
+      <div id="test-content" class="test-content">
+        <!-- 动态渲染三级测试流程内容 -->
       </div>
     </div>
   </div>
@@ -11292,6 +11271,163 @@ const DISEASE_DB = {
   }
 };
 
+// ========== 问询问题库 - 第一级：疾病相关选项问询 ==========
+const QUESTIONNAIRE_DB = {
+  '高血压': [
+    { id: 'q_bp1', question: '您是否经常感到头晕、头痛？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_bp2', question: '您是否有高血压家族史？', options: ['是', '否', '不确定'], weights: [2, 0, 0] },
+    { id: 'q_bp3', question: '您是否经常心悸、耳鸣？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_bp4', question: '您的工作是否需要长期久坐？', options: ['是', '否'], weights: [1, 0] },
+    { id: 'q_bp5', question: '您是否吸烟或饮酒？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] }
+  ],
+  '糖尿病': [
+    { id: 'q_dm1', question: '您是否有多饮、多尿、多食症状？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_dm2', question: '您是否有糖尿病家族史？', options: ['是', '否', '不确定'], weights: [2, 0, 0] },
+    { id: 'q_dm3', question: '您近期是否有不明原因体重下降？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_dm4', question: '您是否经常感到口渴？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_dm5', question: '您的年龄是否超过45岁？', options: ['是', '否'], weights: [1, 0] }
+  ],
+  '胃炎': [
+    { id: 'q_g1', question: '您是否有胃痛、胃胀症状？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_g2', question: '您是否有反酸、烧心症状？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_g3', question: '您是否经常饮食不规律？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_g4', question: '您是否经常吃辛辣刺激食物？', options: ['经常', '偶尔', '从不'], weights: [1, 0.5, 0] }
+  ],
+  '胃溃疡': [
+    { id: 'q_gu1', question: '您是否有餐后上腹痛？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_gu2', question: '您是否有黑便史？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_gu3', question: '您是否服用过非甾体抗炎药（如阿司匹林、布洛芬）？', options: ['长期', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_gu4', question: '您的上腹痛是否有节律性（如餐后痛）？', options: ['是', '否'], weights: [2, 0] }
+  ],
+  '十二指肠溃疡': [
+    { id: 'q_du1', question: '您是否有空腹痛或夜间痛？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_du2', question: '进食后腹痛是否缓解？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_du3', question: '您是否有反酸症状？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_du4', question: '您是否有黑便史？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_du5', question: '您是否长期精神紧张或压力大？', options: ['是', '否'], weights: [1, 0] }
+  ],
+  '失眠': [
+    { id: 'q_i1', question: '您入睡是否需要超过30分钟？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_i2', question: '您夜间是否容易醒来？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_i3', question: '您是否早醒后难以再入睡？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_i4', question: '您白天是否感到困倦乏力？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] }
+  ],
+  '颈椎病': [
+    { id: 'q_c1', question: '您是否经常颈肩部酸痛？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_c2', question: '您是否有手麻症状？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_c3', question: '您是否长期低头工作或使用手机？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_c4', question: '您是否有头晕症状？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] }
+  ],
+  '腰椎间盘突出': [
+    { id: 'q_l1', question: '您是否有腰痛症状？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_l2', question: '您是否有腿麻或腿痛症状？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_l3', question: '您是否需要久坐工作？', options: ['是', '否'], weights: [1, 0] },
+    { id: 'q_l4', question: '弯腰时腰痛是否加重？', options: ['是', '否'], weights: [2, 0] }
+  ],
+  '冠心病': [
+    { id: 'q_chd1', question: '您是否有胸痛、胸闷症状？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_chd2', question: '您是否有冠心病家族史？', options: ['是', '否', '不确定'], weights: [2, 0, 0] },
+    { id: 'q_chd3', question: '您是否有高血压、高血脂或糖尿病？', options: ['有', '无'], weights: [2, 0] },
+    { id: 'q_chd4', question: '您是否吸烟？', options: ['是', '否'], weights: [2, 0] }
+  ],
+  '焦虑症': [
+    { id: 'q_a1', question: '您是否经常感到紧张、焦虑？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_a2', question: '您是否难以控制担忧？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_a3', question: '您是否有心慌、出汗、手抖等躯体症状？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_a4', question: '您是否坐立不安？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] }
+  ],
+  '抑郁症': [
+    { id: 'q_d1', question: '您是否对事物失去兴趣？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_d2', question: '您是否感到情绪低落、沮丧？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_d3', question: '您是否感到乏力、精力不足？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_d4', question: '您是否有睡眠问题？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] }
+  ],
+  '痛风': [
+    { id: 'q_g1', question: '您是否有突发关节红肿热痛？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_g2', question: '疼痛是否常见于大脚趾？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_g3', question: '您是否经常饮酒或吃海鲜？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_g4', question: '您是否有痛风家族史？', options: ['是', '否', '不确定'], weights: [2, 0, 0] }
+  ],
+  '过敏性鼻炎': [
+    { id: 'q_ar1', question: '您是否经常打喷嚏、流鼻涕？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_ar2', question: '您是否有鼻痒、鼻塞症状？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_ar3', question: '症状是否在特定季节或环境加重？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_ar4', question: '您是否有过敏性疾病家族史？', options: ['是', '否', '不确定'], weights: [1, 0, 0] }
+  ],
+  '哮喘': [
+    { id: 'q_as1', question: '您是否有喘息症状？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_as2', question: '您是否有胸闷、气短症状？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_as3', question: '症状是否在夜间或运动后加重？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_as4', question: '您是否有哮喘或过敏家族史？', options: ['是', '否', '不确定'], weights: [1, 0, 0] }
+  ],
+  '贫血': [
+    { id: 'q_an1', question: '您是否经常感到乏力、头晕？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_an2', question: '您是否有面色苍白、心悸症状？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_an3', question: '您是否有挑食或素食习惯？', options: ['是', '否'], weights: [1, 0] },
+    { id: 'q_an4', question: '女性：您是否月经量多？', options: ['是', '否', '不适用'], weights: [2, 0, 0] }
+  ],
+  '甲状腺功能亢进': [
+    { id: 'q_h1', question: '您是否有心慌、手抖症状？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_h2', question: '您是否有怕热、多汗症状？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_h3', question: '您近期是否有体重下降？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_h4', question: '您是否有眼球突出或眼睛不适？', options: ['是', '否'], weights: [2, 0] }
+  ],
+  '甲状腺功能减退': [
+    { id: 'q_h1', question: '您是否经常感到乏力、怕冷？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_h2', question: '您是否有体重增加、便秘？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_h3', question: '您是否有皮肤干燥、脱发？', options: ['是', '否'], weights: [1, 0] },
+    { id: 'q_h4', question: '您是否有记忆力减退、反应迟钝？', options: ['是', '否'], weights: [2, 0] }
+  ],
+  '湿疹': [
+    { id: 'q_e1', question: '您是否有皮肤瘙痒症状？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_e2', question: '您是否有皮疹、红斑？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_e3', question: '症状是否反复发作？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_e4', question: '您是否有过敏史？', options: ['是', '否', '不确定'], weights: [1, 0, 0] }
+  ],
+  '脂肪肝': [
+    { id: 'q_f1', question: '您是否超重或肥胖？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_f2', question: '您是否经常饮酒？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_f3', question: '您是否有右上腹不适？', options: ['是', '否'], weights: [1, 0] },
+    { id: 'q_f4', question: '您是否有糖尿病或高血脂？', options: ['是', '否'], weights: [2, 0] }
+  ],
+  '偏头痛': [
+    { id: 'q_m1', question: '您是否有反复发作的头痛？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_m2', question: '头痛是否为单侧搏动性？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_m3', question: '头痛时是否有恶心、畏光？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_m4', question: '头痛持续4-72小时？', options: ['是', '否'], weights: [2, 0] }
+  ],
+  '慢性肾病': [
+    { id: 'q_k1', question: '您是否有泡沫尿？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_k2', question: '您是否有水肿（眼睑或下肢）？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_k3', question: '您是否有高血压或糖尿病？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_k4', question: '您是否有夜尿增多？', options: ['是', '否'], weights: [1, 0] }
+  ],
+  '骨质疏松': [
+    { id: 'q_o1', question: '您是否身高变矮？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_o2', question: '您是否有腰背痛？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_o3', question: '您是否有过骨折史？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_o4', question: '您是否绝经后女性或60岁以上男性？', options: ['是', '否'], weights: [2, 0] }
+  ],
+  '类风湿关节炎': [
+    { id: 'q_r1', question: '您是否有多个关节肿痛？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_r2', question: '您是否有晨僵（持续>1小时）？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_r3', question: '症状是否对称出现？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_r4', question: '症状是否持续超过6周？', options: ['是', '否'], weights: [2, 0] }
+  ],
+  '前列腺增生': [
+    { id: 'q_p1', question: '您是否有尿频、尿急？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_p2', question: '您是否有夜尿增多（>2次/夜）？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_p3', question: '您是否有排尿困难、尿线变细？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_p4', question: '您是否年龄超过50岁？', options: ['是', '否'], weights: [1, 0] }
+  ],
+  '月经失调': [
+    { id: 'q_m1', question: '您的月经周期是否不规律？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_m2', question: '您的月经量是否异常？', options: ['过多', '过少', '正常'], weights: [2, 1, 0] },
+    { id: 'q_m3', question: '您是否有痛经？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_m4', question: '您是否近期压力大或情绪波动？', options: ['是', '否'], weights: [1, 0] }
+  ]
+};
+
 // ========== 扩展测试项目库 (50+项测试) ==========
 const SELF_TESTS = {
   // 心血管系统测试
@@ -11355,6 +11491,10 @@ const SELF_TESTS = {
   ],
   '胃溃疡': [
     { id: 'stomach_pain', name: '胃部触诊', desc: '评估胃部压痛', method: '平躺放松，用手轻压上腹部。观察是否有压痛。', normalStandard: '无压痛', abnormalNote: '上腹压痛，建议消化内科就诊，完善胃镜检查。' },
+    { id: 'stool_color', name: '大便颜色观察', desc: '观察大便颜色', method: '观察大便颜色，有无黑便。', normalStandard: '黄色或褐色', abnormalNote: '黑便提示上消化道出血，建议消化内科急诊就诊。' }
+  ],
+  '十二指肠溃疡': [
+    { id: 'du_pain', name: '腹痛特点评估', desc: '评估腹痛节律性', method: '十二指肠溃疡典型症状为空腹痛（饥饿痛）和夜间痛，进食后缓解。记录腹痛与进食的关系。', normalStandard: '无明显腹痛或与进食无关', abnormalNote: '空腹痛、夜间痛，进食后缓解，提示十二指肠溃疡可能，建议消化内科就诊，完善胃镜检查。' },
     { id: 'stool_color', name: '大便颜色观察', desc: '观察大便颜色', method: '观察大便颜色，有无黑便。', normalStandard: '黄色或褐色', abnormalNote: '黑便提示上消化道出血，建议消化内科急诊就诊。' }
   ],
   '肠易激综合征': [
@@ -11497,6 +11637,7 @@ const MEDICAL_ADVICE = {
   '胃炎': { department: '消化内科', recommendedTests: ['C13/C14呼气试验', '胃镜', '胃功能三项', '血常规'], urgency: 'routine' },
   '脂肪肝': { department: '消化内科/肝病科', recommendedTests: ['肝功能', '腹部B超', 'FibroScan', '血脂', '血糖', '乙肝五项'], urgency: 'routine' },
   '胃溃疡': { department: '消化内科', recommendedTests: ['胃镜', 'C13/C14呼气试验', '胃功能三项', '血常规', '大便潜血'], urgency: 'routine' },
+  '十二指肠溃疡': { department: '消化内科', recommendedTests: ['胃镜检查', 'C13/C14呼气试验', '大便潜血试验'], urgency: 'urgent', description: '十二指肠黏膜溃疡，需规范治疗，警惕出血、穿孔等并发症。' },
   '肠易激综合征': { department: '消化内科', recommendedTests: ['大便常规+潜血', '肠镜（必要时）', '腹部B超', '甲状腺功能'], urgency: 'routine' },
   '胆囊炎': { department: '肝胆外科/消化内科', recommendedTests: ['腹部超声', '肝功能', '血常规', '血淀粉酶', 'MRCP（必要时）'], urgency: 'acute' },
   '胰腺炎': { department: '消化内科/肝胆外科', recommendedTests: ['血淀粉酶', '脂肪酶', '腹部CT', '肝功能', '血脂', '血钙'], urgency: 'emergency' },
@@ -11556,6 +11697,7 @@ const SYMPTOM_DISEASE_MAP = {
   '支气管炎': ['咳嗽', '咳痰', '气喘', '慢性咳嗽'],
   '胆囊炎': ['右上腹痛', '发热', '恶心', '黄疸', '胆囊'],
   '消化性溃疡': ['胃痛', '腹痛', '反酸', '黑便', '呕血'],
+  '十二指肠溃疡': ['空腹痛', '夜间痛', '饥饿痛', '反酸', '黑便', '十二指肠'],
   '痛经': ['痛经', '月经痛', '经期腹痛'],
   '月经失调': ['月经不调', '月经紊乱', '经期不规律'],
   '前列腺增生': ['尿频', '尿急', '排尿困难', '夜尿多'],
@@ -11859,61 +12001,220 @@ function renderFeedbackHistory() {
   }).join('');
 }
 
-// ========== 模块二：测一下 ==========
-let testStep = 1;
-let selfTestResults = {};
-function openTest() { testStep = 1; selfTestResults = {}; updateTestStep(); renderRiskTests(); openModal('modal-test'); }
-function updateTestStep() { for (let i = 1; i <= 2; i++) { document.getElementById(`test-step-${i}`).classList.toggle('hidden', i !== testStep); const dot = document.getElementById(`test-step-dot-${i}`); dot.classList.remove('active', 'done'); if (i === testStep) dot.classList.add('active'); else if (i < testStep) dot.classList.add('done'); } }
-function renderRiskTests() {
-  var diseases = lsGet('diseases') || [];
+// ========== 模块二：测一下（三级流程） ==========
+// 当前测试状态
+let testState = {
+  disease: null,
+  stage: 0, // 0:未开始, 1:问询, 2:居家测试, 3:医院检测, 4:完成
+  questionnaireResults: {},
+  homeTestResults: {},
+  hospitalTestResults: {},
+  riskScore: 0
+};
+
+let questionnaireAnswers = {};
+let homeTestResults = {};
+let hospitalTestResults = {};
+
+function openTest() {
+  // 获取风险疾病优先
   var diseaseRisks = lsGet('disease_risks') || {};
-  var container = document.getElementById('risk-test-list');
-  var noRiskTip = document.getElementById('no-risk-tip');
-  var tests = [];
+  var diseases = lsGet('diseases') || [];
+  
+  // 合并风险疾病和疾病史，风险疾病优先
+  var allDiseases = Object.keys(diseaseRisks);
+  diseases.forEach(function(d) { if (!allDiseases.includes(d)) allDiseases.push(d); });
+  
+  if (allDiseases.length === 0) {
+    showToast('请先在档案设置疾病史或在反馈中描述症状');
+    return;
+  }
+  
+  // 选择第一个风险最高的疾病开始测试
+  testState = {
+    disease: allDiseases[0],
+    stage: 1,
+    questionnaireResults: {},
+    homeTestResults: {},
+    hospitalTestResults: {},
+    riskScore: 0
+  };
+  
+  questionnaireAnswers = {};
+  homeTestResults = {};
+  hospitalTestResults = {};
+  
+  renderTestStage();
+  openModal('modal-test');
+}
 
-  // 优先加载 disease_risks 中的风险疾病的对应测试
-  var riskDiseaseNames = Object.keys(diseaseRisks).sort(function(a, b) {
-    var levelOrder = { 'critical': 0, 'high': 1, 'medium': 2, 'low': 3 };
-    var la = levelOrder[diseaseRisks[a].level] || 3;
-    var lb = levelOrder[diseaseRisks[b].level] || 3;
-    return la - lb;
+function renderTestStage() {
+  var container = document.getElementById('test-content');
+  var disease = testState.disease;
+  var stage = testState.stage;
+  
+  if (stage === 1) {
+    renderQuestionnaire(container, disease);
+  } else if (stage === 2) {
+    renderHomeTests(container, disease);
+  } else if (stage === 3) {
+    renderHospitalTests(container, disease);
+  } else if (stage === 4) {
+    renderRiskReport(container, disease);
+  }
+}
+
+function renderQuestionnaire(container, disease) {
+  var questions = QUESTIONNAIRE_DB[disease] || [];
+  if (questions.length === 0) {
+    testState.stage = 2;
+    renderTestStage();
+    return;
+  }
+  
+  var html = '<div class="mb-4">' +
+    '<div class="flex items-center gap-2 mb-2">' +
+      '<span class="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">第1级 · 问询</span>' +
+      '<span class="text-sm text-gray-500">针对 ' + disease + ' 的症状问询</span>' +
+    '</div>' +
+    '<div class="h-2 bg-gray-100 rounded-full overflow-hidden">' +
+      '<div class="h-full bg-blue-500 rounded-full" style="width: 25%"></div>' +
+    '</div>' +
+  '</div>' +
+  '<div class="space-y-4" id="questionnaire-list">';
+  
+  questions.forEach(function(q, idx) {
+    html += '<div class="bg-gray-50 rounded-xl p-4">' +
+      '<p class="font-medium text-gray-700 mb-3">' + (idx + 1) + '. ' + q.question + '</p>' +
+      '<div class="flex flex-wrap gap-2">';
+    q.options.forEach(function(opt, optIdx) {
+      html += '<button onclick="selectQuestionnaireAnswer(\'' + q.id + '\', ' + optIdx + ', ' + q.weights[optIdx] + ', this)" ' +
+        'class="choice-btn px-4 py-2 text-sm rounded-lg border border-gray-200 hover:bg-primary hover:text-white hover:border-primary transition" ' +
+        'data-question="' + q.id + '" data-value="' + opt + '">' + opt + '</button>';
+    });
+    html += '</div></div>';
   });
+  
+  html += '</div>' +
+  '<div class="mt-6 flex justify-between">' +
+    '<button onclick="closeModal(\'modal-test\')" class="px-4 py-2 text-gray-500">取消</button>' +
+    '<div class="flex gap-2">' +
+      '<button onclick="skipToNextStage()" class="px-4 py-2 text-gray-500">跳过问询</button>' +
+      '<button onclick="submitQuestionnaire()" class="px-6 py-2 bg-primary text-white rounded-lg">提交问询</button>' +
+    '</div>' +
+  '</div>';
+  
+  container.innerHTML = html;
+}
 
-  riskDiseaseNames.forEach(function(d) {
-    if (SELF_TESTS[d]) {
-      SELF_TESTS[d].forEach(function(t) {
-        if (!tests.find(function(x) { return x.id === t.id; })) {
-          tests.push(Object.assign({}, t, { relatedDisease: d, isRisk: true, riskLevel: diseaseRisks[d].level || 'low' }));
-        }
-      });
+function selectQuestionnaireAnswer(questionId, optionIndex, weight, btn) {
+  // 取消同组其他按钮选中状态
+  document.querySelectorAll('[data-question="' + questionId + '"]').forEach(function(b) {
+    b.classList.remove('bg-primary', 'text-white', 'border-primary');
+    b.classList.add('border-gray-200');
+  });
+  btn.classList.add('bg-primary', 'text-white', 'border-primary');
+  btn.classList.remove('border-gray-200');
+  
+  questionnaireAnswers[questionId] = { optionIndex: optionIndex, weight: weight };
+}
+
+function submitQuestionnaire() {
+  var disease = testState.disease;
+  var questions = QUESTIONNAIRE_DB[disease] || [];
+  
+  // 计算风险得分
+  var totalWeight = 0;
+  var maxWeight = 0;
+  var answeredCount = 0;
+  
+  questions.forEach(function(q) {
+    maxWeight += Math.max.apply(null, q.weights);
+    if (questionnaireAnswers[q.id]) {
+      totalWeight += questionnaireAnswers[q.id].weight;
+      answeredCount++;
     }
   });
+  
+  // 风险百分比
+  var riskPercent = maxWeight > 0 ? Math.round((totalWeight / maxWeight) * 100) : 0;
+  testState.riskScore = riskPercent;
+  testState.questionnaireResults = questionnaireAnswers;
+  
+  // 显示问询结果
+  var container = document.getElementById('test-content');
+  var html = '<div class="mb-4">' +
+    '<div class="flex items-center gap-2 mb-2">' +
+      '<span class="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">问询结果</span>' +
+    '</div>' +
+  '</div>' +
+  '<div class="bg-white rounded-xl p-6 text-center">' +
+    '<div class="text-5xl font-bold mb-2 ' + (riskPercent >= 60 ? 'text-red-500' : riskPercent >= 30 ? 'text-orange-500' : 'text-green-500') + '">' + riskPercent + '%</div>' +
+    '<p class="text-gray-600 mb-4">' + disease + ' 风险评估</p>' +
+    '<p class="text-sm text-gray-500">已回答 ' + answeredCount + '/' + questions.length + ' 个问题</p>' +
+  '</div>';
+  
+  if (riskPercent >= 60) {
+    html += '<div class="mt-4 p-4 bg-red-50 rounded-lg border border-red-200">' +
+      '<p class="text-red-700 font-medium">风险较高，建议继续进行居家测试或医院检测</p>' +
+    '</div>';
+  } else if (riskPercent >= 30) {
+    html += '<div class="mt-4 p-4 bg-orange-50 rounded-lg border border-orange-200">' +
+      '<p class="text-orange-700 font-medium">存在一定风险，建议继续测试确认</p>' +
+    '</div>';
+  } else {
+    html += '<div class="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">' +
+      '<p class="text-green-700 font-medium">当前风险较低，可继续观察或结束测试</p>' +
+    '</div>';
+  }
+  
+  html += '<div class="mt-6 flex justify-between">' +
+    '<button onclick="closeModal(\'modal-test\')" class="px-4 py-2 text-gray-500">结束测试</button>' +
+    '<div class="flex gap-2">' +
+      '<button onclick="proceedToStage(2)" class="px-6 py-2 bg-primary text-white rounded-lg">继续居家测试</button>' +
+      (riskPercent >= 60 ? '<button onclick="proceedToStage(3)" class="px-6 py-2 bg-red-500 text-white rounded-lg">直接医院检测</button>' : '') +
+    '</div>' +
+  '</div>';
+  
+  container.innerHTML = html;
+}
 
-  // 然后加载 diseases 列表中不在 risks 中的疾病测试
-  diseases.forEach(function(d) {
-    if (!diseaseRisks[d] && SELF_TESTS[d]) {
-      SELF_TESTS[d].forEach(function(t) {
-        if (!tests.find(function(x) { return x.id === t.id; })) {
-          tests.push(Object.assign({}, t, { relatedDisease: d, isRisk: false }));
-        }
-      });
-    }
-  });
+function skipToNextStage() {
+  testState.stage = 2;
+  renderTestStage();
+}
 
-  if (tests.length === 0) { tests = SELF_TESTS['通用']; }
-  if (tests.length === 0) { container.innerHTML = ''; noRiskTip.classList.remove('hidden'); return; }
-  noRiskTip.classList.add('hidden');
-  container.innerHTML = tests.map(function(t, idx) {
-    var riskBadge = '';
-    if (t.isRisk && t.riskLevel) {
-      riskBadge = '<span class="text-xs px-2 py-0.5 rounded-full ' + getRiskLevelColor(t.riskLevel) + ' ml-1">' + getRiskLevelLabel(t.riskLevel) + '</span>';
-    }
-    return '<div class="bg-gray-50 rounded-xl p-4' + (t.isRisk ? ' border-l-4 border-l-orange-400' : '') + '">' +
+function proceedToStage(stage) {
+  testState.stage = stage;
+  renderTestStage();
+}
+
+function renderHomeTests(container, disease) {
+  var tests = SELF_TESTS[disease] || [];
+  if (tests.length === 0) {
+    testState.stage = 3;
+    renderTestStage();
+    return;
+  }
+  
+  var html = '<div class="mb-4">' +
+    '<div class="flex items-center gap-2 mb-2">' +
+      '<span class="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">第2级 · 居家徒手测试</span>' +
+      '<span class="text-sm text-gray-500">针对 ' + disease + '</span>' +
+    '</div>' +
+    '<div class="h-2 bg-gray-100 rounded-full overflow-hidden">' +
+      '<div class="h-full bg-orange-500 rounded-full" style="width: 50%"></div>' +
+    '</div>' +
+  '</div>' +
+  '<div class="space-y-4" id="home-test-list">';
+  
+  tests.forEach(function(t, idx) {
+    html += '<div class="bg-gray-50 rounded-xl p-4">' +
       '<div class="flex items-start gap-3 mb-2">' +
-        '<span class="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">' + (idx+1) + '</span>' +
+        '<span class="w-6 h-6 rounded-full bg-orange-500 text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">' + (idx+1) + '</span>' +
         '<div class="flex-1">' +
-          '<div class="flex items-center"><h4 class="font-semibold text-gray-700 text-sm">' + t.name + '</h4>' + riskBadge + '</div>' +
-          '<p class="text-xs text-gray-400 mt-0.5">' + t.desc + (t.relatedDisease ? ' · 相关：' + t.relatedDisease : '') + '</p>' +
+          '<h4 class="font-semibold text-gray-700 text-sm">' + t.name + '</h4>' +
+          '<p class="text-xs text-gray-400 mt-0.5">' + t.desc + '</p>' +
         '</div>' +
       '</div>' +
       '<div class="ml-9 mb-3 p-3 bg-white rounded-lg border border-gray-100">' +
@@ -11922,160 +12223,297 @@ function renderRiskTests() {
         (t.abnormalNote ? '<p class="text-xs"><span class="font-medium text-red-600">异常提示：</span><span class="text-red-500">' + t.abnormalNote + '</span></p>' : '') +
       '</div>' +
       '<div class="flex gap-2 ml-9">' +
-        '<button onclick="selectSelfTest(\'' + t.id + '\',\'正常\',this)" class="choice-btn flex-1 text-xs py-2" data-group="self_' + t.id + '" data-value="正常">✅ 正常</button>' +
-        '<button onclick="selectSelfTest(\'' + t.id + '\',\'异常\',this)" class="choice-btn flex-1 text-xs py-2" data-group="self_' + t.id + '" data-value="异常">⚠️ 异常</button>' +
-        '<button onclick="selectSelfTest(\'' + t.id + '\',\'不确定\',this)" class="choice-btn flex-1 text-xs py-2" data-group="self_' + t.id + '" data-value="不确定">❓ 不确定</button>' +
+        '<button onclick="selectHomeTestResult(\'' + t.id + '\',\'正常\',this)" class="choice-btn flex-1 text-xs py-2 border border-gray-200 rounded-lg hover:bg-green-500 hover:text-white hover:border-green-500 transition">正常</button>' +
+        '<button onclick="selectHomeTestResult(\'' + t.id + '\',\'异常\',this)" class="choice-btn flex-1 text-xs py-2 border border-gray-200 rounded-lg hover:bg-red-500 hover:text-white hover:border-red-500 transition">异常</button>' +
+        '<button onclick="selectHomeTestResult(\'' + t.id + '\',\'不确定\',this)" class="choice-btn flex-1 text-xs py-2 border border-gray-200 rounded-lg hover:bg-gray-500 hover:text-white hover:border-gray-500 transition">不确定</button>' +
       '</div>' +
     '</div>';
-  }).join('');
+  });
+  
+  html += '</div>' +
+  '<div class="mt-6 flex justify-between">' +
+    '<button onclick="proceedToStage(1)" class="px-4 py-2 text-gray-500">返回问询</button>' +
+    '<div class="flex gap-2">' +
+      '<button onclick="closeModal(\'modal-test\')" class="px-4 py-2 text-gray-500">结束测试</button>' +
+      '<button onclick="submitHomeTests()" class="px-6 py-2 bg-primary text-white rounded-lg">提交结果</button>' +
+    '</div>' +
+  '</div>';
+  
+  container.innerHTML = html;
 }
-function selectSelfTest(id, value, el) { selfTestResults[id] = value; el.parentElement.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected')); el.classList.add('selected'); }
-function testNextStep(step) { if (step === 2 && testStep === 1) { const diseases = lsGet('diseases') || []; let tests = []; diseases.forEach(d => { if (SELF_TESTS[d]) tests = tests.concat(SELF_TESTS[d]); }); if (tests.length === 0) tests = SELF_TESTS['通用']; const allDone = tests.every(t => selfTestResults[t.id]); if (!allDone && tests.length > 0) { showToast('请完成所有自测项目'); return; } renderTestResult(); } testStep = step; updateTestStep(); }
-function renderTestResult() {
-  var container = document.getElementById('test-result');
-  var diseases = lsGet('diseases') || [];
-  var diseaseRisks = lsGet('disease_risks') || {};
-  var tests = [];
-  diseases.forEach(function(d) { if (SELF_TESTS[d]) tests = tests.concat(SELF_TESTS[d].map(function(t) { return Object.assign({}, t, { relatedDisease: d }); })); });
-  if (tests.length === 0) tests = SELF_TESTS['通用'].map(function(t) { return Object.assign({}, t, { relatedDisease: '通用' }); });
-  var abnormalCount = Object.values(selfTestResults).filter(function(v) { return v === '异常'; }).length;
-  var normalCount = Object.values(selfTestResults).filter(function(v) { return v === '正常'; }).length;
 
-  // 构建结果列表，包含风险等级变化提示
-  container.innerHTML = tests.map(function(t) {
-    var val = selfTestResults[t.id] || '未测';
-    var colors = { '正常': 'text-green-600 bg-green-50', '异常': 'text-red-500 bg-red-50', '不确定': 'text-yellow-600 bg-yellow-50', '未测': 'text-gray-400 bg-gray-50' };
-    var riskChange = '';
-    if (val === '异常' && t.relatedDisease && t.relatedDisease !== '通用') {
-      riskChange = '<span class="text-xs text-red-500 ml-2">风险升级</span>';
-    } else if (val === '正常' && t.relatedDisease && t.relatedDisease !== '通用' && diseaseRisks[t.relatedDisease]) {
-      riskChange = '<span class="text-xs text-green-600 ml-2">风险降低</span>';
-    }
-    return '<div class="flex items-center justify-between py-2 border-b border-gray-50"><span class="text-sm text-gray-600">' + t.name + '</span><div class="flex items-center"><span class="text-xs px-3 py-1 rounded-full ' + colors[val] + '">' + val + '</span>' + riskChange + '</div></div>';
-  }).join('');
+function selectHomeTestResult(testId, result, btn) {
+  var parent = btn.parentElement;
+  parent.querySelectorAll('.choice-btn').forEach(function(b) {
+    b.classList.remove('bg-green-500', 'bg-red-500', 'bg-gray-500', 'text-white');
+  });
+  
+  var colorClass = result === '正常' ? 'bg-green-500' : result === '异常' ? 'bg-red-500' : 'bg-gray-500';
+  btn.classList.add(colorClass, 'text-white');
+  
+  homeTestResults[testId] = result;
+}
 
-  // 收集异常和正常的疾病
-  var abnormalDiseases = new Set();
-  var normalDiseases = new Set();
+function submitHomeTests() {
+  var disease = testState.disease;
+  var tests = SELF_TESTS[disease] || [];
+  
+  // 计算异常比例
+  var abnormalCount = 0;
+  var totalAnswered = 0;
+  
   tests.forEach(function(t) {
-    if (t.relatedDisease && t.relatedDisease !== '通用') {
-      if (selfTestResults[t.id] === '异常') abnormalDiseases.add(t.relatedDisease);
-      else if (selfTestResults[t.id] === '正常') normalDiseases.add(t.relatedDisease);
+    if (homeTestResults[t.id]) {
+      totalAnswered++;
+      if (homeTestResults[t.id] === '异常') {
+        abnormalCount++;
+      }
     }
   });
-
-  var summaryBox = document.getElementById('test-summary-box');
-
-  if (abnormalCount === 0 && normalCount > 0) {
-    // 所有项目正常
-    var loweredRisks = [];
-    normalDiseases.forEach(function(d) { if (diseaseRisks[d]) loweredRisks.push(d); });
-    var normalMsg = '✅ 所有项目正常，继续保持！';
-    if (loweredRisks.length > 0) {
-      normalMsg += '<p class="text-xs text-green-600 mt-1">以下疾病风险已降低：' + loweredRisks.join('、') + '</p>';
-    }
-    summaryBox.className = 'p-4 rounded-xl mb-4 bg-green-50';
-    summaryBox.innerHTML = '<p class="text-sm text-green-700 font-semibold">' + normalMsg + '</p>';
-  } else if (abnormalCount > 0) {
-    // 有异常项目
-    var medicalAdviceHtml = '<div class="mt-4 space-y-3">';
-    var hasEmergencyDisease = false;
-
-    abnormalDiseases.forEach(function(disease) {
-      var advice = MEDICAL_ADVICE[disease];
-      if (advice) {
-        if (advice.urgency === 'emergency' || advice.urgency === 'acute') hasEmergencyDisease = true;
-        medicalAdviceHtml += '<div class="bg-white rounded-lg p-3 border border-red-100">' +
-          '<div class="flex items-center gap-2 mb-2">' +
-            '<span class="text-sm font-semibold text-gray-800">' + disease + '</span>' +
-            '<span class="text-xs px-2 py-0.5 rounded-full ' + getUrgencyColorClass(advice.urgency) + '">' + getUrgencyLabel(advice.urgency) + '</span>' +
-            (diseaseRisks[disease] ? '<span class="text-xs px-2 py-0.5 rounded-full ' + getRiskLevelColor(diseaseRisks[disease].level || 'high') + '">风险已确认</span>' : '') +
-          '</div>' +
-          '<p class="text-xs text-gray-600 mb-1"><span class="font-medium">推荐科室：</span>' + advice.department + '</p>' +
-          '<p class="text-xs text-gray-600"><span class="font-medium">建议检查：</span>' + advice.recommendedTests.join('、') + '</p>' +
-        '</div>';
-      }
-    });
-    medicalAdviceHtml += '</div>';
-
-    var emergencyWarning = '';
-    if (hasEmergencyDisease) {
-      emergencyWarning = '<div class="bg-red-100 rounded-lg p-3 mb-3 border-2 border-red-300">' +
-        '<p class="text-sm text-red-700 font-bold">🚨 发现紧急异常，请立即就医！</p>' +
-        '<p class="text-xs text-red-600 mt-1">您的自测结果显示可能存在需要紧急处理的健康问题，请立即前往医院就诊。</p>' +
-      '</div>';
-    }
-
-    summaryBox.className = 'p-4 rounded-xl mb-4 bg-red-50';
-    summaryBox.innerHTML = emergencyWarning +
-      '<p class="text-sm text-red-700 font-semibold mb-2">⚠️ 发现' + abnormalCount + '项异常，建议就医检查！</p>' +
-      '<p class="text-xs text-red-600">请根据以下建议及时就医：</p>' +
-      medicalAdviceHtml;
+  
+  // 更新风险得分（结合问询和居家测试）
+  var homeRiskAdd = totalAnswered > 0 ? (abnormalCount / totalAnswered) * 30 : 0;
+  testState.riskScore = Math.min(100, testState.riskScore + homeRiskAdd);
+  testState.homeTestResults = homeTestResults;
+  
+  // 显示居家测试结果
+  var container = document.getElementById('test-content');
+  var riskPercent = testState.riskScore;
+  
+  var html = '<div class="mb-4">' +
+    '<div class="flex items-center gap-2 mb-2">' +
+      '<span class="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">居家测试结果</span>' +
+    '</div>' +
+  '</div>' +
+  '<div class="bg-white rounded-xl p-6 text-center">' +
+    '<div class="text-5xl font-bold mb-2 ' + (riskPercent >= 60 ? 'text-red-500' : riskPercent >= 30 ? 'text-orange-500' : 'text-green-500') + '">' + riskPercent + '%</div>' +
+    '<p class="text-gray-600 mb-4">' + disease + ' 综合风险评估</p>' +
+    '<p class="text-sm text-gray-500">异常项目: ' + abnormalCount + '/' + totalAnswered + '</p>' +
+  '</div>';
+  
+  if (abnormalCount > 0) {
+    html += '<div class="mt-4 p-4 bg-red-50 rounded-lg border border-red-200">' +
+      '<p class="text-red-700 font-medium">发现异常项目，建议进行医院检测进一步确认</p>' +
+    '</div>';
   }
+  
+  html += '<div class="mt-6 flex justify-between">' +
+    '<button onclick="proceedToStage(1)" class="px-4 py-2 text-gray-500">返回问询</button>' +
+    '<div class="flex gap-2">' +
+      '<button onclick="closeModal(\'modal-test\')" class="px-4 py-2 text-gray-500">结束测试</button>' +
+      '<button onclick="proceedToStage(3)" class="px-6 py-2 bg-primary text-white rounded-lg">继续医院检测</button>' +
+    '</div>' +
+  '</div>';
+  
+  container.innerHTML = html;
 }
-function saveTestResult() {
-  var diseases = lsGet('diseases') || [];
-  var tests = [];
-  diseases.forEach(function(d) { if (SELF_TESTS[d]) tests = tests.concat(SELF_TESTS[d].map(function(t) { return Object.assign({}, t, { relatedDisease: d }); })); });
-  if (tests.length === 0) tests = SELF_TESTS['通用'].map(function(t) { return Object.assign({}, t, { relatedDisease: '通用' }); });
 
-  var result = {
-    results: tests.map(function(t) { return { id: t.id, name: t.name, value: selfTestResults[t.id] || '未测', relatedDisease: t.relatedDisease }; }),
+function renderHospitalTests(container, disease) {
+  var diseaseInfo = DISEASE_DB[disease] || {};
+  var recommendedTests = diseaseInfo.recommendedTests || [];
+  
+  if (recommendedTests.length === 0) {
+    testState.stage = 4;
+    renderTestStage();
+    return;
+  }
+  
+  var html = '<div class="mb-4">' +
+    '<div class="flex items-center gap-2 mb-2">' +
+      '<span class="px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">第3级 · 医院检测</span>' +
+      '<span class="text-sm text-gray-500">针对 ' + disease + '</span>' +
+    '</div>' +
+    '<div class="h-2 bg-gray-100 rounded-full overflow-hidden">' +
+      '<div class="h-full bg-red-500 rounded-full" style="width: 75%"></div>' +
+    '</div>' +
+  '</div>' +
+  '<div class="bg-yellow-50 rounded-lg p-4 mb-4">' +
+    '<p class="text-yellow-700 text-sm">以下为建议在医院进行的专业检测项目，请咨询医生后进行检测，并记录结果。</p>' +
+  '</div>' +
+  '<div class="space-y-4" id="hospital-test-list">';
+  
+  recommendedTests.forEach(function(testName, idx) {
+    html += '<div class="bg-gray-50 rounded-xl p-4">' +
+      '<div class="flex items-start gap-3 mb-2">' +
+        '<span class="w-6 h-6 rounded-full bg-red-500 text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">' + (idx+1) + '</span>' +
+        '<div class="flex-1">' +
+          '<h4 class="font-semibold text-gray-700 text-sm">' + testName + '</h4>' +
+        '</div>' +
+      '</div>' +
+      '<div class="flex gap-2 ml-9">' +
+        '<button onclick="selectHospitalTestResult(\'' + testName + '\',\'正常\',this)" class="choice-btn flex-1 text-xs py-2 border border-gray-200 rounded-lg hover:bg-green-500 hover:text-white hover:border-green-500 transition">正常</button>' +
+        '<button onclick="selectHospitalTestResult(\'' + testName + '\',\'异常\',this)" class="choice-btn flex-1 text-xs py-2 border border-gray-200 rounded-lg hover:bg-red-500 hover:text-white hover:border-red-500 transition">异常</button>' +
+        '<button onclick="selectHospitalTestResult(\'' + testName + '\',\'未检测\',this)" class="choice-btn flex-1 text-xs py-2 border border-gray-200 rounded-lg hover:bg-gray-500 hover:text-white hover:border-gray-500 transition">未检测</button>' +
+      '</div>' +
+    '</div>';
+  });
+  
+  html += '</div>' +
+  '<div class="mt-6 flex justify-between">' +
+    '<button onclick="proceedToStage(2)" class="px-4 py-2 text-gray-500">返回居家测试</button>' +
+    '<div class="flex gap-2">' +
+      '<button onclick="closeModal(\'modal-test\')" class="px-4 py-2 text-gray-500">稍后记录</button>' +
+      '<button onclick="submitHospitalTests()" class="px-6 py-2 bg-primary text-white rounded-lg">生成报告</button>' +
+    '</div>' +
+  '</div>';
+  
+  container.innerHTML = html;
+}
+
+function selectHospitalTestResult(testName, result, btn) {
+  var parent = btn.parentElement;
+  parent.querySelectorAll('.choice-btn').forEach(function(b) {
+    b.classList.remove('bg-green-500', 'bg-red-500', 'bg-gray-500', 'text-white');
+  });
+  
+  var colorClass = result === '正常' ? 'bg-green-500' : result === '异常' ? 'bg-red-500' : 'bg-gray-500';
+  btn.classList.add(colorClass, 'text-white');
+  
+  hospitalTestResults[testName] = result;
+}
+
+function submitHospitalTests() {
+  var disease = testState.disease;
+  var diseaseInfo = DISEASE_DB[disease] || {};
+  var recommendedTests = diseaseInfo.recommendedTests || [];
+  
+  // 计算异常比例
+  var abnormalCount = 0;
+  var totalTested = 0;
+  
+  recommendedTests.forEach(function(t) {
+    if (hospitalTestResults[t] && hospitalTestResults[t] !== '未检测') {
+      totalTested++;
+      if (hospitalTestResults[t] === '异常') {
+        abnormalCount++;
+      }
+    }
+  });
+  
+  // 更新风险得分
+  var hospitalRiskAdd = totalTested > 0 ? (abnormalCount / totalTested) * 40 : 0;
+  testState.riskScore = Math.min(100, testState.riskScore + hospitalRiskAdd);
+  testState.hospitalTestResults = hospitalTestResults;
+  
+  testState.stage = 4;
+  renderTestStage();
+}
+
+function renderRiskReport(container, disease) {
+  var riskPercent = testState.riskScore;
+  var diseaseInfo = DISEASE_DB[disease] || {};
+  var urgency = diseaseInfo.urgency || 'routine';
+  
+  var urgencyLabels = {
+    'emergency': { text: '急诊', color: 'red' },
+    'acute': { text: '尽快就诊', color: 'orange' },
+    'urgent': { text: '需及时就诊', color: 'yellow' },
+    'routine': { text: '门诊随访', color: 'blue' }
+  };
+  
+  var urgencyInfo = urgencyLabels[urgency] || urgencyLabels['routine'];
+  
+  var html = '<div class="mb-4">' +
+    '<div class="flex items-center gap-2 mb-2">' +
+      '<span class="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">测试完成</span>' +
+    '</div>' +
+    '<div class="h-2 bg-gray-100 rounded-full overflow-hidden">' +
+      '<div class="h-full bg-green-500 rounded-full" style="width: 100%"></div>' +
+    '</div>' +
+  '</div>' +
+  
+  '<div class="bg-white rounded-xl p-6 text-center mb-4">' +
+    '<h3 class="text-lg font-bold text-gray-800 mb-4">' + disease + ' 风险评估报告</h3>' +
+    '<div class="text-6xl font-bold mb-2 ' + (riskPercent >= 60 ? 'text-red-500' : riskPercent >= 30 ? 'text-orange-500' : 'text-green-500') + '">' + riskPercent + '%</div>' +
+    '<p class="text-gray-600">综合风险评估结果</p>' +
+    '<div class="mt-4 inline-block px-4 py-2 rounded-full bg-' + urgencyInfo.color + '-100 text-' + urgencyInfo.color + '-700 text-sm">' +
+      urgencyInfo.text +
+    '</div>' +
+  '</div>';
+  
+  // 风险等级说明
+  if (riskPercent >= 60) {
+    html += '<div class="bg-red-50 rounded-xl p-4 mb-4 border border-red-200">' +
+      '<h4 class="font-bold text-red-700 mb-2">高风险提示</h4>' +
+      '<p class="text-red-600 text-sm mb-2">根据测试结果，' + disease + '风险较高，建议尽快就医确诊。</p>' +
+      '<p class="text-red-600 text-sm"><strong>推荐科室：</strong>' + (diseaseInfo.department || '相关科室') + '</p>' +
+      '<p class="text-red-600 text-sm"><strong>建议检查：</strong>' + (diseaseInfo.recommendedTests || []).join('、') + '</p>' +
+    '</div>';
+  } else if (riskPercent >= 30) {
+    html += '<div class="bg-orange-50 rounded-xl p-4 mb-4 border border-orange-200">' +
+      '<h4 class="font-bold text-orange-700 mb-2">中风险提示</h4>' +
+      '<p class="text-orange-600 text-sm mb-2">存在一定风险，建议关注相关症状，必要时就医检查。</p>' +
+      '<p class="text-orange-600 text-sm"><strong>推荐科室：</strong>' + (diseaseInfo.department || '相关科室') + '</p>' +
+    '</div>';
+  } else {
+    html += '<div class="bg-green-50 rounded-xl p-4 mb-4 border border-green-200">' +
+      '<h4 class="font-bold text-green-700 mb-2">低风险提示</h4>' +
+      '<p class="text-green-600 text-sm">当前风险较低，建议保持健康生活方式，定期体检。</p>' +
+    '</div>';
+  }
+  
+  // 测试汇总
+  html += '<div class="bg-gray-50 rounded-xl p-4 mb-4">' +
+    '<h4 class="font-medium text-gray-700 mb-3">测试汇总</h4>' +
+    '<div class="grid grid-cols-3 gap-2 text-center text-xs">' +
+      '<div class="bg-white p-2 rounded">' +
+        '<div class="font-medium text-blue-600">问询</div>' +
+        '<div class="text-gray-500">' + Object.keys(testState.questionnaireResults).length + '项</div>' +
+      '</div>' +
+      '<div class="bg-white p-2 rounded">' +
+        '<div class="font-medium text-orange-600">居家测试</div>' +
+        '<div class="text-gray-500">' + Object.keys(testState.homeTestResults).length + '项</div>' +
+      '</div>' +
+      '<div class="bg-white p-2 rounded">' +
+        '<div class="font-medium text-red-600">医院检测</div>' +
+        '<div class="text-gray-500">' + Object.keys(testState.hospitalTestResults).filter(function(k) { return testState.hospitalTestResults[k] !== '未检测'; }).length + '项</div>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+  
+  html += '<div class="flex gap-2">' +
+    '<button onclick="saveTestReport()" class="flex-1 px-6 py-3 bg-primary text-white rounded-lg font-medium">保存报告</button>' +
+    '<button onclick="closeModal(\'modal-test\')" class="px-6 py-3 bg-gray-100 text-gray-600 rounded-lg">关闭</button>' +
+  '</div>';
+  
+  container.innerHTML = html;
+}
+
+function saveTestReport() {
+  var disease = testState.disease;
+  var riskPercent = testState.riskScore;
+  
+  // 保存测试报告
+  var report = {
+    disease: disease,
+    riskScore: riskPercent,
+    questionnaireResults: testState.questionnaireResults,
+    homeTestResults: testState.homeTestResults,
+    hospitalTestResults: testState.hospitalTestResults,
     timestamp: Date.now()
   };
-  lsSet('test_result', result);
-
-  // 收集异常和正常的疾病
-  var abnormalDiseases = new Set();
-  var normalDiseases = new Set();
-  tests.forEach(function(t) {
-    if (t.relatedDisease && t.relatedDisease !== '通用') {
-      if (selfTestResults[t.id] === '异常') abnormalDiseases.add(t.relatedDisease);
-      else if (selfTestResults[t.id] === '正常') normalDiseases.add(t.relatedDisease);
-    }
-  });
-
-  var diseaseRisks = lsGet('disease_risks') || {};
-
-  // 异常项目 → 升级风险等级
-  if (abnormalDiseases.size > 0) {
-    abnormalDiseases.forEach(function(disease) {
-      var risk = updateDiseaseRisk(disease, 'test');
-      // 自动添加对应疾病的学习卡片到提分计划
-      var addedCount = autoAddDiseaseLearningCards(disease);
-      if (addedCount > 0) {
-        showToast(disease + '：已添加' + addedCount + '个学习卡片到提分计划');
-      }
-    });
-
-    // 自动添加到疾病史
-    var currentDiseases = lsGet('diseases') || [];
-    abnormalDiseases.forEach(function(disease) {
-      if (!currentDiseases.includes(disease)) {
-        currentDiseases.push(disease);
-      }
-    });
-    lsSet('diseases', currentDiseases);
+  
+  lsSet('test_report', report);
+  
+  // 更新疾病风险
+  if (riskPercent >= 30) {
+    updateDiseaseRisk(disease, 'test');
+    autoAddDiseaseLearningCards(disease);
   }
-
-  // 正常项目 → 降低风险等级
-  normalDiseases.forEach(function(disease) {
-    if (diseaseRisks[disease]) {
-      diseaseRisks[disease].count = Math.max(0, (diseaseRisks[disease].count || 1) - 1);
-      diseaseRisks[disease].lastUpdate = Date.now();
-      var urgency = getDiseaseUrgency(disease);
-      diseaseRisks[disease].level = getRiskLevel(diseaseRisks[disease].count, urgency);
-      // 如果计数降到0，移除风险记录
-      if (diseaseRisks[disease].count <= 0) {
-        delete diseaseRisks[disease];
-      }
-      lsSet('disease_risks', diseaseRisks);
+  
+  // 如果高风险，添加到疾病史
+  if (riskPercent >= 60) {
+    var diseases = lsGet('diseases') || [];
+    if (!diseases.includes(disease)) {
+      diseases.push(disease);
+      lsSet('diseases', diseases);
     }
-  });
-
+  }
+  
   updateHealthScore();
   renderDiseaseAccordion();
-  showToast('自测结果已保存，已更新疾病风险记录');
+  
+  showToast('测试报告已保存');
   closeModal('modal-test');
 }
 
