@@ -12552,8 +12552,9 @@ function buildRiskCardHTML(disease, risk, percent, hitKeywords) {
   }
 
   html += '<div class="flex gap-2">';
-  html += '<button onclick="goToTestForDisease(\'' + disease + '\')" class="flex-1 text-center text-xs bg-primary text-white py-2 rounded-lg hover:bg-primary-dark transition-colors">去测试确认</button>';
-  html += '<button onclick="dismissDiseaseRisk(\'' + disease + '\')" class="text-xs px-3 py-2 bg-gray-100 text-gray-500 rounded-lg hover:bg-gray-200 transition-colors">忽略</button>';
+  var safeDisease = disease.replace(/'/g, "\\'");
+  html += '<button onclick="goToTestForDisease(\'' + safeDisease + '\')" class="flex-1 text-center text-xs bg-primary text-white py-2 rounded-lg hover:bg-primary-dark transition-colors">去测试确认</button>';
+  html += '<button onclick="dismissDiseaseRisk(\'' + safeDisease + '\')" class="text-xs px-3 py-2 bg-gray-100 text-gray-500 rounded-lg hover:bg-gray-200 transition-colors">忽略</button>';
   html += '</div>';
   html += '</div>';
   return html;
@@ -12595,7 +12596,8 @@ function buildFeedbackRiskCard(disease, risk, percent, hitKeywords) {
   }
 
   // 只有去测试确认按钮，没有忽略按钮
-  html += '<button onclick="goToTestForDisease(\'' + disease + '\')" class="w-full text-center text-xs bg-primary text-white py-2 rounded-lg hover:bg-primary-dark transition-colors">去测试确认</button>';
+  var safeDisease = disease.replace(/'/g, "\\'");
+  html += '<button onclick="goToTestForDisease(\'' + safeDisease + '\')" class="w-full text-center text-xs bg-primary text-white py-2 rounded-lg hover:bg-primary-dark transition-colors">去测试确认</button>';
   html += '</div>';
   return html;
 }
@@ -12841,8 +12843,9 @@ function openTest() {
       var riskColor = riskPercent >= 60 ? 'text-red-500' : riskPercent >= 30 ? 'text-orange-500' : riskPercent !== null ? 'text-green-500' : 'text-gray-400';
       var isFromTestList = testDiseases.includes(disease);
 
+      var safeDisease = disease.replace(/'/g, "\\'");
       html += '<div class="w-full bg-gray-50 rounded-xl p-4 flex items-center justify-between">';
-      html += '<button onclick="startDiseaseTest(\'' + disease + '\')" class="flex-1 text-left">';
+      html += '<button onclick="startDiseaseTest(\'' + safeDisease + '\')" class="flex-1 text-left">';
       html += '<div><span class="font-medium text-gray-700 text-sm">' + disease + '</span>';
       if (latestReport) {
         var date = new Date(latestReport.timestamp);
@@ -12856,7 +12859,7 @@ function openTest() {
       if (riskPercent !== null) {
         html += '<span class="text-lg font-bold ' + riskColor + '">' + riskPercent + '%</span>';
       }
-      html += '<button onclick="removeTestDisease(\'' + disease + '\')" class="text-gray-400 hover:text-red-500 text-sm px-2" title="从列表移除">×</button>';
+      html += '<button onclick="removeTestDisease(\'' + safeDisease + '\')" class="text-gray-400 hover:text-red-500 text-sm px-2" title="从列表移除">×</button>';
       html += '</div>';
       html += '</div>';
     });
@@ -12879,7 +12882,8 @@ function showAddTestDisease() {
   html += '<div class="max-h-80 overflow-y-auto space-y-1">';
   allDiseases.forEach(function(disease) {
     var isAdded = testDiseases.includes(disease);
-    html += '<button onclick="addTestDisease(\'' + disease + '\')" class="w-full text-left px-4 py-2 rounded-lg ' + (isAdded ? 'bg-green-50 text-green-600' : 'bg-gray-50 hover:bg-gray-100') + ' text-sm flex items-center justify-between">';
+    var safeDisease = disease.replace(/'/g, "\\'");
+    html += '<button onclick="addTestDisease(\'' + safeDisease + '\')" class="w-full text-left px-4 py-2 rounded-lg ' + (isAdded ? 'bg-green-50 text-green-600' : 'bg-gray-50 hover:bg-gray-100') + ' text-sm flex items-center justify-between">';
     html += '<span>' + disease + '</span>';
     if (isAdded) html += '<span>✓ 已添加</span>';
     html += '</button>';
@@ -13543,7 +13547,8 @@ function viewDiseaseDetail(disease) {
       html += '<span class="text-xs text-gray-500">' + dateStr + '</span>';
       html += '<div class="flex items-center gap-2">';
       html += '<span class="text-lg font-bold ' + color + '">' + report.riskScore + '%</span>';
-      html += '<button onclick="deleteTestReport(' + report.timestamp + ', \'' + disease + '\')" class="text-gray-400 hover:text-red-500 text-xs" title="删除报告">×</button>';
+      var safeDisease = disease.replace(/'/g, "\\'");
+      html += '<button onclick="deleteTestReport(' + report.timestamp + ', \'' + safeDisease + '\')" class="text-gray-400 hover:text-red-500 text-xs" title="删除报告">×</button>';
       html += '</div></div>';
 
       if (report.questionnaireResults && Object.keys(report.questionnaireResults).length > 0) {
@@ -13560,7 +13565,8 @@ function viewDiseaseDetail(disease) {
     html += '</div>';
   }
 
-  html += '<button onclick="goToTestForDisease(\'' + disease + '\')" class="w-full mt-3 px-4 py-2 bg-primary text-white rounded-lg text-sm">重新测试</button>';
+  var safeDisease = disease.replace(/'/g, "\\'");
+  html += '<button onclick="goToTestForDisease(\'' + safeDisease + '\')" class="w-full mt-3 px-4 py-2 bg-primary text-white rounded-lg text-sm">重新测试</button>';
   html += '</div>';
 
   document.getElementById('disease-detail-content').innerHTML = html;
@@ -14020,7 +14026,8 @@ function showAddLearning() {
     html += '<div class="space-y-1 mb-4">';
     diseases.forEach(function(d) {
       if (DISEASE_DB[d]) {
-        html += '<button onclick="addLearningForDisease(\'' + d + '\')" class="w-full text-left px-4 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm">' + d + '</button>';
+        var safeD = d.replace(/'/g, "\\'");
+        html += '<button onclick="addLearningForDisease(\'' + safeD + '\')" class="w-full text-left px-4 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm">' + d + '</button>';
       }
     });
     html += '</div>';
@@ -14030,7 +14037,8 @@ function showAddLearning() {
   html += '<div class="mb-3"><span class="text-xs text-gray-500">所有疾病</span></div>';
   html += '<div class="max-h-48 overflow-y-auto space-y-1">';
   allDiseases.forEach(function(d) {
-    html += '<button onclick="addLearningForDisease(\'' + d + '\')" class="w-full text-left px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-sm">' + d + '</button>';
+    var safeD = d.replace(/'/g, "\\'");
+    html += '<button onclick="addLearningForDisease(\'' + safeD + '\')" class="w-full text-left px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-sm">' + d + '</button>';
   });
   html += '</div>';
   
