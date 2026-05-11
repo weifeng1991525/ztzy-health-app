@@ -12811,8 +12811,13 @@ function viewDiseaseDetail(disease) {
       var date = new Date(report.timestamp);
       var dateStr = date.getFullYear() + '-' + String(date.getMonth()+1).padStart(2,'0') + '-' + String(date.getDate()).padStart(2,'0') + ' ' + String(date.getHours()).padStart(2,'0') + ':' + String(date.getMinutes()).padStart(2,'0');
       var color = report.riskScore >= 60 ? 'text-red-500' : report.riskScore >= 30 ? 'text-orange-500' : 'text-green-500';
-      html += '<div class="bg-gray-50 rounded-lg p-3 mb-2">';
-      html += '<div class="flex items-center justify-between mb-1"><span class="text-xs text-gray-500">' + dateStr + '</span><span class="text-lg font-bold ' + color + '">' + report.riskScore + '%</span></div>';
+      html += '<div class="bg-gray-50 rounded-lg p-3 mb-2" id="report-' + report.timestamp + '">';
+      html += '<div class="flex items-center justify-between mb-1">';
+      html += '<span class="text-xs text-gray-500">' + dateStr + '</span>';
+      html += '<div class="flex items-center gap-2">';
+      html += '<span class="text-lg font-bold ' + color + '">' + report.riskScore + '%</span>';
+      html += '<button onclick="deleteTestReport(' + report.timestamp + ', \'' + disease + '\')" class="text-gray-400 hover:text-red-500 text-xs" title="删除报告">×</button>';
+      html += '</div></div>';
 
       if (report.questionnaireResults && Object.keys(report.questionnaireResults).length > 0) {
         html += '<p class="text-xs text-gray-500">问询: ' + Object.keys(report.questionnaireResults).length + '项</p>';
@@ -12833,6 +12838,18 @@ function viewDiseaseDetail(disease) {
 
   document.getElementById('disease-detail-content').innerHTML = html;
   openModal('modal-disease-detail');
+}
+function deleteTestReport(timestamp, disease) {
+  if (!confirm('确定要删除这份测试报告吗？')) return;
+  var testReports = lsGet('test_reports') || [];
+  var idx = testReports.findIndex(function(r) { return r.timestamp === timestamp && r.disease === disease; });
+  if (idx >= 0) {
+    testReports.splice(idx, 1);
+    lsSet('test_reports', testReports);
+    showToast('测试报告已删除');
+    // 刷新详情弹窗
+    viewDiseaseDetail(disease);
+  }
 }
 function addDisease() {
   const input = document.getElementById('disease-input');
@@ -12879,12 +12896,173 @@ function generateShareCode() {
 }
 function renderShareCode() { const code = lsGet('share_code'); if (code) document.getElementById('my-share-code').textContent = code; }
 function exportData() {
-  const data = { profile: lsGet('profile') || {}, diseases: lsGet('diseases') || [], allergies: lsGet('allergies') || {}, feedbacks: lsGet('feedbacks') || [], testResult: lsGet('test_result'), scoreHistory: lsGet('score_history') || [], checkins: lsGet('checkins') || {}, myPlan: lsGet('my_plan') || [], exportedAt: new Date().toISOString() };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = `知体知医_健康档案_${getDateStr(Date.now())}.json`; a.click();
-  URL.revokeObjectURL(url);
-  showToast('档案已导出');
+  // 收集所有健康数据
+  const profile = lsGet('profile') || {};
+  const diseases = lsGet('diseases') || [];
+  const diseaseRisks = lsGet('disease_risks') || {};
+  const allergies = lsGet('allergies') || { drug: [], food: [], env: [] };
+  const feedbacks = lsGet('feedbacks') || [];
+  const testReports = lsGet('test_reports') || [];
+  const myPlan = lsGet('my_plan') || [];
+  const checkins = lsGet('checkins') || {};
+  
+  const now = new Date();
+  const dateStr = now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日';
+  const timeStr = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  
+  // 构建临床病历风格的HTML
+  let html = `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>健康档案 - ${profile.nickname || '未命名'}</title>
+<style>
+@page { size: A4; margin: 20mm; }
+body { font-family: "SimSun", "宋体", serif; font-size: 12pt; line-height: 1.6; color: #333; }
+.header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
+.header h1 { font-size: 18pt; margin: 0; }
+.header .subtitle { font-size: 10pt; color: #666; margin-top: 5px; }
+.section { margin-bottom: 15px; }
+.section-title { font-size: 13pt; font-weight: bold; border-left: 4px solid #2c5aa0; padding-left: 8px; margin-bottom: 8px; background: #f5f5f5; padding: 5px 8px; }
+.info-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+.info-table td { padding: 5px 10px; border: 1px solid #ddd; }
+.info-table .label { background: #f9f9f9; width: 15%; font-weight: bold; }
+.info-table .value { width: 35%; }
+.content-box { border: 1px solid #ddd; padding: 10px; background: #fafafa; }
+.disease-item { margin-bottom: 8px; padding: 8px; background: #fff; border-left: 3px solid #2c5aa0; }
+.disease-risk { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 10pt; margin-left: 10px; }
+.risk-high { background: #ffebee; color: #c62828; }
+.risk-medium { background: #fff3e0; color: #ef6c00; }
+.risk-low { background: #e8f5e9; color: #2e7d32; }
+.report-item { margin-bottom: 10px; padding: 10px; background: #fff; border: 1px solid #e0e0e0; }
+.report-date { color: #666; font-size: 10pt; }
+.footer { margin-top: 30px; padding-top: 10px; border-top: 1px solid #ccc; font-size: 9pt; color: #666; text-align: center; }
+.disclaimer { background: #fff3e0; border: 1px solid #ffcc80; padding: 10px; margin: 15px 0; font-size: 10pt; }
+ul { margin: 5px 0; padding-left: 20px; }
+li { margin-bottom: 3px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>个人健康档案</h1>
+  <div class="subtitle">知体知医健康管理系统 | 导出时间：${dateStr} ${timeStr}</div>
+</div>
+
+<!-- 基本信息 -->
+<div class="section">
+  <div class="section-title">一、基本信息</div>
+  <table class="info-table">
+    <tr>
+      <td class="label">姓名</td>
+      <td class="value">${profile.nickname || '未填写'}</td>
+      <td class="label">性别</td>
+      <td class="value">${profile.gender || '未填写'}</td>
+    </tr>
+    <tr>
+      <td class="label">年龄</td>
+      <td class="value">${profile.age || '未填写'} 岁</td>
+      <td class="label">血型</td>
+      <td class="value">${profile.bloodType || '未填写'}</td>
+    </tr>
+  </table>
+</div>
+
+<!-- 既往病史 -->
+<div class="section">
+  <div class="section-title">二、既往病史</div>
+  <div class="content-box">
+    ${diseases.length > 0 ? diseases.map(function(d) {
+      var risk = diseaseRisks[d];
+      var riskClass = risk ? (risk.level === 'critical' || risk.level === 'high' ? 'risk-high' : risk.level === 'medium' ? 'risk-medium' : 'risk-low') : 'risk-low';
+      var riskText = risk ? (risk.level === 'critical' ? '极高危' : risk.level === 'high' ? '高危' : risk.level === 'medium' ? '中危' : '低危') : '未评估';
+      return '<div class="disease-item"><strong>' + d + '</strong><span class="disease-risk ' + riskClass + '">' + riskText + '</span></div>';
+    }).join('') : '<p style="color:#999;">暂无记录</p>'}
+  </div>
+</div>
+
+<!-- 过敏史 -->
+<div class="section">
+  <div class="section-title">三、过敏史</div>
+  <table class="info-table">
+    <tr>
+      <td class="label">药物过敏</td>
+      <td class="value">${allergies.drug && allergies.drug.length > 0 ? allergies.drug.join('、') : '无'}</td>
+      <td class="label">食物过敏</td>
+      <td class="value">${allergies.food && allergies.food.length > 0 ? allergies.food.join('、') : '无'}</td>
+    </tr>
+    <tr>
+      <td class="label">环境过敏</td>
+      <td class="value" colspan="3">${allergies.env && allergies.env.length > 0 ? allergies.env.join('、') : '无'}</td>
+    </tr>
+  </table>
+</div>
+
+<!-- 近期健康反馈 -->
+<div class="section">
+  <div class="section-title">四、近期健康反馈（近10条）</div>
+  <div class="content-box">
+    ${feedbacks.slice(-10).reverse().map(function(f) {
+      var d = new Date(f.timestamp);
+      var ds = (d.getMonth()+1) + '/' + d.getDate();
+      return '<p>• ' + ds + ' [' + f.tag + '] ' + (f.text || '无详细描述') + '</p>';
+    }).join('') || '<p style="color:#999;">暂无记录</p>'}
+  </div>
+</div>
+
+<!-- 测试报告 -->
+<div class="section">
+  <div class="section-title">五、健康测试报告</div>
+  <div class="content-box">
+    ${testReports.length > 0 ? testReports.slice().reverse().map(function(r) {
+      var d = new Date(r.timestamp);
+      var ds = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+      var riskClass = r.riskScore >= 60 ? 'risk-high' : r.riskScore >= 30 ? 'risk-medium' : 'risk-low';
+      return '<div class="report-item"><div class="report-date">' + ds + ' · ' + r.disease + '</div><div style="margin-top:5px;">风险评估：<span class="disease-risk ' + riskClass + '">' + r.riskScore + '%</span></div></div>';
+    }).join('') : '<p style="color:#999;">暂无测试记录</p>'}
+  </div>
+</div>
+
+<!-- 健康计划 -->
+<div class="section">
+  <div class="section-title">六、健康改善计划</div>
+  <div class="content-box">
+    ${myPlan.length > 0 ? '<ul>' + myPlan.map(function(p) {
+      return '<li>' + p.title + '</li>';
+    }).join('') + '</ul>' : '<p style="color:#999;">暂无计划</p>'}
+  </div>
+</div>
+
+<!-- 打卡记录 -->
+<div class="section">
+  <div class="section-title">七、健康打卡记录</div>
+  <div class="content-box">
+    <p>累计打卡天数：<strong>${Object.keys(checkins).length}</strong> 天</p>
+    <p>最近打卡日期：${Object.keys(checkins).sort().slice(-5).join('、') || '无'}</p>
+  </div>
+</div>
+
+<!-- 免责声明 -->
+<div class="disclaimer">
+  <strong>重要提示：</strong>本档案仅供参考，不作为疾病诊断依据。如有身体不适，请及时就医并遵医嘱。
+</div>
+
+<div class="footer">
+  本档案由「知体知医」健康管理系统自动生成<br>
+  导出时间：${dateStr} ${timeStr}
+</div>
+
+<script>
+window.onload = function() { window.print(); };
+</script>
+</body>
+</html>`;
+  
+  // 打开新窗口打印/PDF导出
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(html);
+  printWindow.document.close();
+  showToast('健康档案已打开，请选择"另存为PDF"保存');
 }
 
 // ========== 提分页 ==========
