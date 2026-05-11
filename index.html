@@ -13958,10 +13958,11 @@ function renderDiseaseAccordion() {
 
                 dietHtml = '<p class="text-xs text-gray-600 leading-relaxed whitespace-pre-line">' + exerciseContent + '</p>';
               }
+              var safeTitle = (card.title || '').replace(/'/g, "\\'");
               return '<div class="sub-card">' +
                 '<div class="flex items-center justify-between mb-2">' +
                   '<div class="flex items-center gap-2"><span>' + card.icon + '</span><span class="text-sm font-semibold text-gray-700">' + card.title + '</span></div>' +
-                  '<button onclick="addToPlan(\'' + name + '\',\'' + key + '\',\'' + card.title + '\')" class="text-xs bg-primary text-white px-3 py-1 rounded-full hover:bg-primary-dark transition-colors">+ 加入计划</button>' +
+                  '<button onclick="addToPlan(\'' + name + '\',\'' + key + '\',\'' + safeTitle + '\')" class="text-xs bg-primary text-white px-3 py-1 rounded-full hover:bg-primary-dark transition-colors">+ 加入计划</button>' +
                 '</div>' +
                 dietHtml +
               '</div>';
