@@ -11438,6 +11438,433 @@ const QUESTIONNAIRE_DB = {
     { id: 'q_m2', question: '您的月经量是否异常？', options: ['过多', '过少', '正常'], weights: [2, 1, 0] },
     { id: 'q_m3', question: '您是否有痛经？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
     { id: 'q_m4', question: '您是否近期压力大或情绪波动？', options: ['是', '否'], weights: [1, 0] }
+  ],
+  '偏头痛': [
+    { id: 'q_mg1', question: '您的头痛是否呈搏动性跳痛？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_mg2', question: '头痛是否位于头部一侧？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_mg3', question: '头痛时是否伴有恶心、呕吐？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_mg4', question: '头痛时是否怕光、怕声？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_mg5', question: '您是否有偏头痛家族史？', options: ['是', '否', '不确定'], weights: [2, 0, 0] }
+  ],
+  '冠心病': [
+    { id: 'q_chd1', question: '您是否感到胸闷、胸痛？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_chd2', question: '胸痛是否在活动后加重、休息后缓解？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_chd3', question: '您是否有高血压、高血脂或糖尿病？', options: ['有', '无'], weights: [2, 0] },
+    { id: 'q_chd4', question: '您是否吸烟？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_chd5', question: '您是否有冠心病家族史？', options: ['是', '否', '不确定'], weights: [2, 0, 0] }
+  ],
+  '痛风': [
+    { id: 'q_gt1', question: '您是否有关节红肿热痛？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_gt2', question: '疼痛是否位于大脚趾根部？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_gt3', question: '疼痛是否在夜间突然发作？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_gt4', question: '您是否经常饮酒或吃海鲜？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_gt5', question: '您是否检测过血尿酸？', options: ['偏高', '正常', '未检测'], weights: [3, 0, 0] }
+  ],
+  '抑郁症': [
+    { id: 'q_dep1', question: '您是否感到情绪低落、兴趣减退？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_dep2', question: '您是否感到疲劳、精力不足？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_dep3', question: '您是否睡眠不好（失眠或嗜睡）？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_dep4', question: '您是否食欲改变（减退或增加）？', options: ['是', '否'], weights: [1, 0] },
+    { id: 'q_dep5', question: '您是否感到无价值感或自责？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] }
+  ],
+  '焦虑症': [
+    { id: 'q_anx1', question: '您是否经常感到紧张、担心？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_anx2', question: '您是否难以控制担忧？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_anx3', question: '您是否伴有心慌、出汗、手抖？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_anx4', question: '您是否感到坐立不安？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] }
+  ],
+  '贫血': [
+    { id: 'q_an1', question: '您是否面色苍白、乏力？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_an2', question: '您是否活动后心悸、气短？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_an3', question: '您是否头晕、头痛？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_an4', question: '您是否有月经量过多或消化道出血？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_an5', question: '您是否素食或营养不良？', options: ['是', '否'], weights: [1, 0] }
+  ],
+  '甲状腺功能亢进': [
+    { id: 'q_thy1', question: '您是否心慌、手抖？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_thy2', question: '您是否怕热、多汗？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_thy3', question: '您是否食欲增加但体重下降？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_thy4', question: '您是否容易激动、脾气急躁？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_thy5', question: '您是否有甲状腺肿大或突眼？', options: ['是', '否'], weights: [2, 0] }
+  ],
+  '脂肪肝': [
+    { id: 'q_fl1', question: '您是否肥胖或超重？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_fl2', question: '您是否经常饮酒？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_fl3', question: '您是否有高血脂或糖尿病？', options: ['有', '无'], weights: [2, 0] },
+    { id: 'q_fl4', question: '您是否感到肝区不适或乏力？', options: ['是', '否'], weights: [1, 0] }
+  ],
+  '慢性肾病': [
+    { id: 'q_ckd1', question: '您是否发现尿液有泡沫？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_ckd2', question: '您是否下肢水肿？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_ckd3', question: '您是否尿量减少？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_ckd4', question: '您是否有高血压或糖尿病？', options: ['有', '无'], weights: [2, 0] },
+    { id: 'q_ckd5', question: '您是否腰酸、乏力？', options: ['经常', '偶尔', '从不'], weights: [1, 0, 0] }
+  ],
+  '肺炎': [
+    { id: 'q_pn1', question: '您是否发热？', options: ['高热', '低热', '无'], weights: [3, 2, 0] },
+    { id: 'q_pn2', question: '您是否咳嗽、咳痰？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_pn3', question: '您是否胸痛、呼吸困难？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_pn4', question: '您是否近期感冒后症状加重？', options: ['是', '否'], weights: [2, 0] }
+  ],
+  '哮喘': [
+    { id: 'q_asm1', question: '您是否反复发作喘息、气促？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_asm2', question: '症状是否在夜间或清晨加重？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_asm3', question: '您是否对冷空气、花粉或尘螨过敏？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_asm4', question: '症状是否可自行缓解或使用支气管扩张剂后缓解？', options: ['是', '否'], weights: [3, 0] }
+  ],
+  '过敏性鼻炎': [
+    { id: 'q_ar1', question: '您是否经常打喷嚏、流鼻涕？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_ar2', question: '您是否鼻塞、鼻痒？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_ar3', question: '症状是否在特定季节或接触过敏原后发作？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_ar4', question: '您是否有过敏性疾病家族史？', options: ['是', '否', '不确定'], weights: [1, 0, 0] }
+  ],
+  '湿疹': [
+    { id: 'q_ec1', question: '您是否有皮肤瘙痒、红斑？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_ec2', question: '皮疹是否呈多形性、有渗出倾向？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_ec3', question: '皮疹是否对称分布？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_ec4', question: '症状是否反复发作、慢性经过？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_ec5', question: '您是否有过敏史？', options: ['是', '否'], weights: [1, 0] }
+  ],
+  '胆囊炎': [
+    { id: 'q_gb1', question: '您是否有右上腹痛？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_gb2', question: '疼痛是否在进食油腻食物后加重？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_gb3', question: '您是否伴有恶心、呕吐？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_gb4', question: '您是否曾有黄疸（皮肤或眼睛发黄）？', options: ['是', '否'], weights: [2, 0] }
+  ],
+  '肠易激综合征': [
+    { id: 'q_ibs1', question: '您是否腹痛伴排便习惯改变（腹泻/便秘）？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_ibs2', question: '腹痛是否在排便后缓解？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_ibs3', question: '症状是否在情绪紧张时加重？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_ibs4', question: '症状是否持续超过3个月？', options: ['是', '否'], weights: [1, 0] }
+  ],
+  '便秘': [
+    { id: 'q_con1', question: '您是否排便次数减少（每周少于3次）？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_con2', question: '您是否排便困难、费力？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_con3', question: '您的大便是否干硬、呈块状？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_con4', question: '症状是否持续超过3个月？', options: ['是', '否'], weights: [1, 0] }
+  ],
+  '骨质疏松': [
+    { id: 'q_op1', question: '您是否有腰背疼痛？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_op2', question: '您的身高是否变矮或驼背？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_op3', question: '您是否发生过脆性骨折（轻微外力即骨折）？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_op4', question: '您是否绝经后女性或65岁以上男性？', options: ['是', '否'], weights: [2, 0] }
+  ],
+  '类风湿关节炎': [
+    { id: 'q_ra1', question: '您是否有关节肿痛？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_ra2', question: '是否有晨僵（早晨关节僵硬）超过1小时？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_ra3', question: '关节肿痛是否对称分布（双侧）？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_ra4', question: '症状是否持续超过6周？', options: ['是', '否'], weights: [2, 0] }
+  ],
+  '前列腺增生': [
+    { id: 'q_bph1', question: '您是否尿频、尿急？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_bph2', question: '您是否排尿困难、尿线变细？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_bph3', question: '您是否夜尿增多（每晚超过2次）？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_bph4', question: '您是否50岁以上男性？', options: ['是', '否'], weights: [1, 0] }
+  ],
+  '痛经': [
+    { id: 'q_dys1', question: '您是否月经期下腹痛？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_dys2', question: '疼痛是否在月经来潮前或来潮时开始？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_dys3', question: '疼痛是否影响日常生活？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_dys4', question: '您是否伴有恶心、呕吐或腹泻？', options: ['是', '否'], weights: [1, 0] }
+  ],
+  '干眼症': [
+    { id: 'q_de1', question: '您是否眼睛干涩、异物感？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_de2', question: '您是否视疲劳、视物模糊？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_de3', question: '您是否长期使用电脑或手机？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_de4', question: '症状是否在空调房或干燥环境中加重？', options: ['是', '否'], weights: [2, 0] }
+  ],
+  '帕金森病': [
+    { id: 'q_pd1', question: '您是否手抖（静止时明显）？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_pd2', question: '您是否动作变慢、肢体僵硬？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_pd3', question: '您是否走路小碎步、容易跌倒？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_pd4', question: '您是否面部表情减少（面具脸）？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_pd5', question: '您是否50岁以上？', options: ['是', '否'], weights: [1, 0] }
+  ],
+  '睡眠呼吸暂停综合征': [
+    { id: 'q_sas1', question: '您是否打鼾声音大？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_sas2', question: '您是否夜间憋醒或呼吸暂停？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_sas3', question: '您是否白天嗜睡、晨起头痛？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_sas4', question: '您是否肥胖（BMI>28）？', options: ['是', '否'], weights: [2, 0] }
+  ],
+  '尿路感染': [
+    { id: 'q_uti1', question: '您是否尿频、尿急、尿痛？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_uti2', question: '您是否下腹部不适？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_uti3', question: '您是否尿液浑浊或有异味？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_uti4', question: '您是否发热、腰痛？', options: ['是', '否'], weights: [3, 0] }
+  ],
+  '肾结石': [
+    { id: 'q_nl1', question: '您是否腰部剧烈疼痛？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_nl2', question: '疼痛是否向腹股沟放射？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_nl3', question: '您是否血尿（肉眼或镜下）？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_nl4', question: '您是否饮水较少或高盐饮食？', options: ['是', '否'], weights: [1, 0] }
+  ],
+  '消化性溃疡': [
+    { id: 'q_pu1', question: '您是否上腹部疼痛？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_pu2', question: '疼痛是否有节律性（餐前或餐后）？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_pu3', question: '您是否反酸、嗳气？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_pu4', question: '您是否有黑便史？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_pu5', question: '您是否长期服用止痛药或阿司匹林？', options: ['是', '否'], weights: [2, 0] }
+  ],
+  '胃食管反流病': [
+    { id: 'q_gerd1', question: '您是否反酸、烧心？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_gerd2', question: '症状是否在餐后或平躺时加重？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_gerd3', question: '您是否感到胸骨后灼热感？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_gerd4', question: '您是否经常嗳气、咽部异物感？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] }
+  ],
+  '慢性支气管炎': [
+    { id: 'q_cb1', question: '您是否慢性咳嗽、咳痰？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_cb2', question: '症状是否每年持续3个月以上、连续2年？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_cb3', question: '您是否吸烟或长期接触粉尘？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_cb4', question: '您是否冬季症状加重？', options: ['是', '否'], weights: [1, 0] }
+  ],
+  '慢性阻塞性肺疾病': [
+    { id: 'q_copd1', question: '您是否慢性咳嗽、咳痰？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_copd2', question: '您是否活动后气短、呼吸困难？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_copd3', question: '您是否长期吸烟？', options: ['是（>20年）', '是（<20年）', '否'], weights: [3, 2, 0] },
+    { id: 'q_copd4', question: '您是否40岁以上？', options: ['是', '否'], weights: [1, 0] }
+  ],
+  '甲状腺功能减退': [
+    { id: 'q_hypo1', question: '您是否乏力、怕冷？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_hypo2', question: '您是否体重增加、浮肿？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_hypo3', question: '您是否便秘、记忆力减退？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_hypo4', question: '您是否皮肤干燥、脱发？', options: ['是', '否'], weights: [1, 0] }
+  ],
+  '月经不调': [
+    { id: 'q_irr1', question: '您的月经周期是否规律（28±7天）？', options: ['不规律', '基本规律'], weights: [3, 0] },
+    { id: 'q_irr2', question: '您的月经量是否过多或过少？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_irr3', question: '您是否伴有痛经或其他不适？', options: ['是', '否'], weights: [1, 0] },
+    { id: 'q_irr4', question: '症状是否持续超过3个月？', options: ['是', '否'], weights: [1, 0] }
+  ],
+  '更年期综合征': [
+    { id: 'q_clm1', question: '您是否潮热、盗汗？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_clm2', question: '您是否情绪波动、易怒或抑郁？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_clm3', question: '您是否月经紊乱或停经？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_clm4', question: '您是否45-55岁女性？', options: ['是', '否'], weights: [2, 0] }
+  ],
+  '子宫肌瘤': [
+    { id: 'q_uf1', question: '您是否月经量多、经期延长？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_uf2', question: '您是否下腹部包块或压迫感？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_uf3', question: '您是否尿频、便秘（压迫症状）？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_uf4', question: '您是否30-50岁女性？', options: ['是', '否'], weights: [1, 0] }
+  ],
+  '多囊卵巢综合征': [
+    { id: 'q_pcos1', question: '您是否月经稀发或闭经？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_pcos2', question: '您是否多毛、痤疮？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_pcos3', question: '您是否肥胖或难以减重？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_pcos4', question: '您是否有不孕史？', options: ['是', '否'], weights: [2, 0] }
+  ],
+  '前列腺炎': [
+    { id: 'q_pro1', question: '您是否尿频、尿急、尿不尽？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_pro2', question: '您是否会阴或下腹部不适？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_pro3', question: '您是否腰骶部酸痛？', options: ['是', '否'], weights: [1, 0] },
+    { id: 'q_pro4', question: '症状是否在久坐或饮酒后加重？', options: ['是', '否'], weights: [2, 0] }
+  ],
+  '腰椎间盘突出': [
+    { id: 'q_ldh1', question: '您是否腰痛伴下肢放射痛？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_ldh2', question: '咳嗽或用力时疼痛是否加重？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_ldh3', question: '您是否有下肢麻木或无力？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_ldh4', question: '您是否久坐或重体力劳动者？', options: ['是', '否'], weights: [1, 0] }
+  ],
+  '坐骨神经痛': [
+    { id: 'q_sn1', question: '您是否臀部或大腿后侧疼痛？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_sn2', question: '疼痛是否沿坐骨神经走向放射（大腿后侧→小腿→足）？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_sn3', question: '直腿抬高时疼痛是否加重？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_sn4', 'question': '您是否久坐或腰部受凉史？', options: ['是', '否'], weights: [1, 0] }
+  ],
+  '强直性脊柱炎': [
+    { id: 'q_as1', question: '您是否腰背痛、晨僵？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_as2', question: '晨僵是否持续超过30分钟？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_as3', question: '活动后症状是否缓解？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_as4', question: '您是否40岁以下男性？', options: ['是', '否'], weights: [2, 0] }
+  ],
+  '骨关节炎': [
+    { id: 'q_oa1', question: '您是否关节疼痛（膝、髋或手）？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_oa2', question: '上下楼梯或蹲起时疼痛是否加重？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_oa3', question: '您是否50岁以上？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_oa4', question: '您是否关节僵硬（<30分钟）？', options: ['是', '否'], weights: [1, 0] }
+  ],
+  '肩周炎': [
+    { id: 'q_fz1', question: '您是否肩关节疼痛？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_fz2', question: '肩关节活动是否受限（不能上举或后伸）？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_fz3', question: '夜间疼痛是否加重？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_fz4', question: '您是否50岁左右？', options: ['是', '否'], weights: [1, 0] }
+  ],
+  '网球肘': [
+    { id: 'q_te1', question: '您是否肘关节外侧疼痛？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_te2', question: '拧毛巾或握物时疼痛是否加重？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_te3', question: '您是否经常使用手臂工作（如打字、拧螺丝）？', options: ['是', '否'], weights: [1, 0] }
+  ],
+  '白内障': [
+    { id: 'q_cat1', question: '您是否视力逐渐下降？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_cat2', question: '您是否视物模糊、眩光？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_cat3', question: '您是否60岁以上？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_cat4', question: '您是否糖尿病或长期用药史？', options: ['是', '否'], weights: [1, 0] }
+  ],
+  '青光眼': [
+    { id: 'q_glc1', question: '您是否眼胀、眼痛伴头痛？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_glc2', question: '您是否视力下降、视野缺损？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_glc3', question: '您是否看到灯光周围有彩虹样光环？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_glc4', question: '您是否有青光眼家族史？', options: ['是', '否', '不确定'], weights: [2, 0, 0] }
+  ],
+  '中耳炎': [
+    { id: 'q_om1', question: '您是否耳痛、耳闷？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_om2', question: '您是否有耳道流脓？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_om3', question: '您是否听力下降？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_om4', question: '您是否近期有感冒或游泳史？', options: ['是', '否'], weights: [1, 0] }
+  ],
+  '扁桃体炎': [
+    { id: 'q_ton1', question: '您是否咽痛、吞咽困难？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_ton2', question: '您是否发热？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_ton3', question: '您是否扁桃体红肿或有脓点？', options: ['是', '否'], weights: [3, 0] }
+  ],
+  '荨麻疹': [
+    { id: 'q_urt1', question: '您是否皮肤出现风团（红色或苍白色隆起）？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_urt2', question: '皮疹是否瘙痒、时起时消？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_urt3', question: '皮疹是否在24小时内自行消退？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_urt4', question: '您是否接触过过敏原（食物、药物、花粉）？', options: ['是', '否'], weights: [2, 0] }
+  ],
+  '带状疱疹': [
+    { id: 'q_sh1', question: '您是否身体一侧皮肤疼痛或灼热感？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_sh2', question: '疼痛部位是否出现成簇水疱？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_sh3', question: '皮疹是否呈带状分布、不超过身体中线？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_sh4', question: '您是否近期免疫力下降或劳累？', options: ['是', '否'], weights: [1, 0] }
+  ],
+  '银屑病': [
+    { id: 'q_pso1', question: '您是否皮肤红斑上覆银白色鳞屑？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_pso2', question: '皮疹是否好发于头皮、肘膝伸侧？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_pso3', question: '刮除鳞屑后是否有点状出血？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_pso4', question: '症状是否反复发作、冬重夏轻？', options: ['是', '否'], weights: [2, 0] }
+  ],
+  '过敏性紫癜': [
+    { id: 'q_ah1', question: '您是否下肢出现紫红色出血点（压之不褪色）？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_ah2', question: '您是否伴有关节肿痛？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_ah3', question: '您是否伴有腹痛或血尿？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_ah4', question: '您是否近期有感染或用药史？', options: ['是', '否'], weights: [1, 0] }
+  ],
+  '系统性红斑狼疮': [
+    { id: 'q_sle1', question: '您是否面部蝶形红斑？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_sle2', question: '您是否关节痛、肌肉痛？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_sle3', question: '您是否光敏感（日晒后皮疹加重）？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_sle4', question: '您是否女性、育龄期？', options: ['是', '否'], weights: [2, 0] }
+  ],
+  '干燥综合征': [
+    { id: 'q_ss1', question: '您是否口干（需频繁饮水）？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_ss2', question: '您是否眼干、异物感？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_ss3', question: '您是否反复腮腺肿大？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_ss4', question: '您是否40岁以上女性？', options: ['是', '否'], weights: [1, 0] }
+  ],
+  '缺铁性贫血': [
+    { id: 'q_ida1', question: '您是否面色苍白、乏力？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_ida2', question: '您是否头晕、心悸？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_ida3', question: '您是否指甲变薄、易碎？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_ida4', question: '您是否异食癖（喜食泥土、冰块）？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_ida5', question: '您是否月经量过多或消化道出血史？', options: ['是', '否'], weights: [2, 0] }
+  ],
+  '巨幼细胞贫血': [
+    { id: 'q_ma1', question: '您是否乏力、头晕？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_ma2', question: '您是否舌炎（舌红、疼痛）？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_ma3', question: '您是否手脚麻木、感觉异常？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_ma4', question: '您是否素食或胃肠道手术后？', options: ['是', '否'], weights: [2, 0] }
+  ],
+  '肝硬化': [
+    { id: 'q_cir1', question: '您是否腹胀、腹水？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_cir2', question: '您是否黄疸（皮肤、眼睛发黄）？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_cir3', question: '您是否长期饮酒或乙肝病史？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_cir4', question: '您是否鼻出血、牙龈出血？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] }
+  ],
+  '急性胃肠炎': [
+    { id: 'q_age1', question: '您是否腹泻（水样便）？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_age2', question: '您是否呕吐？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_age3', question: '您是否腹痛、发热？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_age4', question: '您是否进食不洁食物史？', options: ['是', '否'], weights: [2, 0] }
+  ],
+  '阑尾炎': [
+    { id: 'q_ap1', question: '您是否右下腹疼痛？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_ap2', question: '疼痛是否从脐周转移至右下腹？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_ap3', question: '您是否伴有发热、恶心、呕吐？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_ap4', question: '您是否麦氏点压痛（右下腹压痛）？', options: ['是', '否'], weights: [3, 0] }
+  ],
+  '痔疮': [
+    { id: 'q_hem1', question: '您是否便后出血（鲜红色）？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_hem2', question: '您是否肛门疼痛或有肿物脱出？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_hem3', question: '您是否便秘或久坐？', options: ['是', '否'], weights: [2, 0] }
+  ],
+  '功能性消化不良': [
+    { id: 'q_fd1', question: '您是否上腹不适、饱胀？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_fd2', question: '您是否早饱（吃一点就饱）？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_fd3', question: '症状是否持续超过3个月？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_fd4', question: '检查是否未发现器质性病变？', options: ['是', '否'], weights: [3, 0] }
+  ],
+  '慢性胃炎': [
+    { id: 'q_cg1', question: '您是否上腹隐痛、饱胀？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_cg2', question: '您是否嗳气、反酸？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_cg3', question: '您是否食欲减退、恶心？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_cg4', question: '症状是否持续超过3个月？', options: ['是', '否'], weights: [2, 0] }
+  ],
+  '肝功能异常': [
+    { id: 'q_lft1', question: '您是否乏力、食欲差？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_lft2', question: '您是否黄疸、肝区不适？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_lft3', question: '您是否长期饮酒或用药？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_lft4', question: '您是否检查发现转氨酶升高？', options: ['是', '否'], weights: [3, 0] }
+  ],
+  '高脂血症': [
+    { id: 'q_hl1', question: '您是否肥胖、腹部脂肪堆积？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_hl2', question: '您是否饮食油腻、运动少？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_hl3', question: '您是否检查发现血脂升高？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_hl4', question: '您是否有黄色瘤（眼睑或关节）？', options: ['是', '否'], weights: [3, 0] }
+  ],
+  '高尿酸血症': [
+    { id: 'q_hu1', question: '您是否检查发现血尿酸升高？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_hu2', question: '您是否有关节疼痛发作史？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_hu3', question: '您是否经常饮酒、吃海鲜或动物内脏？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] }
+  ],
+  '维生素D缺乏': [
+    { id: 'q_vd1', question: '您是否骨痛、肌肉无力？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_vd2', question: '您是否容易骨折？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_vd3', question: '您是否日晒不足或老年人？', options: ['是', '否'], weights: [2, 0] }
+  ],
+  '慢性疲劳综合征': [
+    { id: 'q_cfs1', question: '您是否持续疲劳超过6个月？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_cfs2', question: '休息后疲劳是否不能缓解？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_cfs3', question: '您是否伴有肌肉痛、关节痛？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_cfs4', question: '您是否睡眠后仍感疲劳？', options: ['是', '否'], weights: [2, 0] }
+  ],
+  '阿尔茨海默病': [
+    { id: 'q_ad1', question: '您是否记忆力明显下降（尤其近期记忆）？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_ad2', question: '您是否迷路或忘记熟悉的地方？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_ad3', question: '您是否叫不出熟悉物品的名字？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_ad4', question: '您是否65岁以上？', options: ['是', '否'], weights: [2, 0] }
+  ],
+  '脑卒中': [
+    { id: 'q_stroke1', question: '您是否突然一侧肢体无力或麻木？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_stroke2', question: '您是否口角歪斜、言语不清？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_stroke3', question: '您是否突然头晕、行走不稳？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_stroke4', question: '您是否突然视物模糊或失明？', options: ['是', '否'], weights: [3, 0] }
+  ],
+  '心律失常': [
+    { id: 'q_arr1', question: '您是否感到心悸、心跳不齐？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_arr2', question: '您是否感到心跳过快或过慢？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_arr3', question: '您是否感到胸闷、头晕？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_arr4', question: '您是否有心脏病史？', options: ['是', '否'], weights: [2, 0] }
+  ],
+  '心力衰竭': [
+    { id: 'q_hf1', question: '您是否活动后呼吸困难？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_hf2', question: '您是否夜间不能平卧、需要垫高枕头？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_hf3', question: '您是否下肢水肿？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_hf4', question: '您是否乏力、心悸？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] }
+  ],
+  '心肌炎': [
+    { id: 'q_my1', question: '您是否感冒后出现心悸、胸闷？', options: ['是', '否'], weights: [3, 0] },
+    { id: 'q_my2', question: '您是否乏力、气短？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_my3', question: '您是否心跳过快或不齐？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_my4', question: '您是否近期有病毒感染史？', options: ['是', '否'], weights: [2, 0] }
+  ],
+  '植物神经功能紊乱': [
+    { id: 'q_dys1', question: '您是否心慌、出汗、手抖？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_dys2', question: '您是否失眠、多梦？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_dys3', question: '您是否腹胀、消化不良？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_dys4', question: '您是否焦虑、紧张？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_dys5', question: '检查是否未发现器质性病变？', options: ['是', '否'], weights: [3, 0] }
   ]
 };
 
@@ -11631,6 +12058,216 @@ const SELF_TESTS = {
     { id: 'gait', name: '步态平衡检测', desc: '评估行走稳定性', method: '在安全环境下，闭眼单脚站立，记录时间。30秒以上为正常。', normalStandard: '≥30秒', abnormalNote: '平衡能力下降，建议神经内科就诊，排查神经系统疾病。' },
     { id: 'bmi_check', name: 'BMI计算', desc: '评估体重指数', method: 'BMI = 体重(kg) / 身高(m)²。正常范围18.5-24。', normalStandard: 'BMI 18.5-24', abnormalNote: 'BMI异常，建议进行体重管理评估。' },
     { id: 'bp_check', name: '血压自测', desc: '测量静息血压', method: '静坐5分钟后，使用血压计测量。', normalStandard: '收缩压<120mmHg，舒张压<80mmHg', abnormalNote: '血压异常，建议心内科就诊。' }
+  ],
+  '偏头痛': [
+    { name: '头痛日记记录', method: '记录头痛发作时间、诱因、持续时间', standard: '连续记录2周，发现规律' }
+  ],
+  '冠心病': [
+    { name: '活动耐量自测', method: '平地快走或爬1层楼，观察是否胸闷', standard: '无胸闷为正常，有胸闷需警惕' }
+  ],
+  '痛风': [
+    { name: '关节观察', method: '观察关节是否红肿热痛', standard: '红肿热痛提示急性发作' }
+  ],
+  '抑郁症': [
+    { name: '情绪自评', method: 'PHQ-9量表自评', standard: '评分≥10分建议就医' }
+  ],
+  '焦虑症': [
+    { name: '焦虑自评', method: 'GAD-7量表自评', standard: '评分≥10分建议就医' }
+  ],
+  '贫血': [
+    { name: '面色观察', method: '观察下眼睑结膜颜色', standard: '苍白提示贫血可能' }
+  ],
+  '甲状腺功能亢进': [
+    { name: '心率自测', method: '静息状态测量脉搏', standard: '静息心率>100次/分需警惕' }
+  ],
+  '脂肪肝': [
+    { name: '腰围测量', method: '测量腰围', standard: '男性≥90cm，女性≥85cm为超标' }
+  ],
+  '慢性肾病': [
+    { name: '尿液观察', method: '观察尿液颜色和泡沫', standard: '泡沫多且持久不散需警惕' }
+  ],
+  '肺炎': [
+    { name: '体温监测', method: '测量体温', standard: '体温>37.3℃为发热' }
+  ],
+  '哮喘': [
+    { name: '呼吸观察', method: '观察呼吸是否费力、有无喘鸣音', standard: '呼气延长伴喘鸣音提示发作' }
+  ],
+  '过敏性鼻炎': [
+    { name: '症状记录', method: '记录打喷嚏、流鼻涕频率', standard: '连续打喷嚏>3个，清水样鼻涕' }
+  ],
+  '湿疹': [
+    { name: '皮肤观察', method: '观察皮疹形态和分布', standard: '多形性皮疹、对称分布、瘙痒' }
+  ],
+  '胆囊炎': [
+    { name: '腹痛定位', method: '按压右上腹观察疼痛', standard: '右上腹压痛阳性' }
+  ],
+  '肠易激综合征': [
+    { name: '排便记录', method: '记录排便习惯和粪便性状', standard: 'Bristol分型1-2型或6-7型' }
+  ],
+  '便秘': [
+    { name: '排便记录', method: '记录排便频率和费力程度', standard: '每周<3次或排便费力' }
+  ],
+  '骨质疏松': [
+    { name: '身高测量', method: '测量身高并与年轻时对比', standard: '身高缩短>3cm提示骨质疏松' }
+  ],
+  '类风湿关节炎': [
+    { name: '关节检查', method: '检查关节肿胀和晨僵时间', standard: '关节肿胀、晨僵>1小时' }
+  ],
+  '前列腺增生': [
+    { name: '排尿日记', method: '记录排尿次数和尿量', standard: '夜尿≥2次，尿线变细' }
+  ],
+  '痛经': [
+    { name: '疼痛评分', method: 'VAS评分', standard: '评分≥4分影响生活' }
+  ],
+  '干眼症': [
+    { name: '眨眼测试', method: '正常眨眼观察泪膜破裂', standard: '眨眼后泪膜迅速破裂' }
+  ],
+  '帕金森病': [
+    { name: '动作观察', method: '观察手部动作和步态', standard: '静止性震颤、动作迟缓' }
+  ],
+  '睡眠呼吸暂停综合征': [
+    { name: '打鼾观察', method: '录音或询问家人打鼾情况', standard: '鼾声大、有呼吸暂停' }
+  ],
+  '尿路感染': [
+    { name: '尿液观察', method: '观察尿液颜色和气味', standard: '尿液浑浊、有异味' }
+  ],
+  '肾结石': [
+    { name: '疼痛观察', method: '观察腰痛性质', standard: '绞痛、向腹股沟放射' }
+  ],
+  '消化性溃疡': [
+    { name: '腹痛规律', method: '观察腹痛与进食关系', standard: '餐后痛（胃）或空腹痛（十二指肠）' }
+  ],
+  '胃食管反流病': [
+    { name: '症状记录', method: '记录反酸、烧心频率', standard: '每周≥2次' }
+  ],
+  '慢性支气管炎': [
+    { name: '咳嗽记录', method: '记录咳嗽、咳痰情况', standard: '咳嗽咳痰每年持续3个月以上' }
+  ],
+  '慢性阻塞性肺疾病': [
+    { name: '呼吸困难评估', method: 'mMRC呼吸困难量表', standard: '≥2级需警惕' }
+  ],
+  '甲状腺功能减退': [
+    { name: '症状观察', method: '观察怕冷、浮肿情况', standard: '明显怕冷、非凹陷性浮肿' }
+  ],
+  '月经不调': [
+    { name: '月经记录', method: '记录月经周期和量', standard: '周期<21天或>35天，量过多或过少' }
+  ],
+  '更年期综合征': [
+    { name: '症状记录', method: '记录潮热、出汗频率', standard: '每日≥5次' }
+  ],
+  '子宫肌瘤': [
+    { name: '月经记录', method: '记录月经量和经期', standard: '经量增多、经期延长' }
+  ],
+  '多囊卵巢综合征': [
+    { name: '症状观察', method: '观察痤疮、多毛情况', standard: '面部痤疮、体毛增多' }
+  ],
+  '前列腺炎': [
+    { name: '症状记录', method: '记录尿频、尿急情况', standard: '尿频尿急、会阴不适' }
+  ],
+  '腰椎间盘突出': [
+    { name: '直腿抬高试验', method: '平躺抬腿观察疼痛', standard: '抬高<60°出现放射痛' }
+  ],
+  '坐骨神经痛': [
+    { name: '疼痛观察', method: '观察疼痛走向', standard: '沿坐骨神经走向放射' }
+  ],
+  '强直性脊柱炎': [
+    { name: '活动观察', method: '观察晨僵和活动后缓解', standard: '晨僵>30分钟，活动后缓解' }
+  ],
+  '骨关节炎': [
+    { name: '关节活动', method: '观察关节活动是否受限', standard: '活动时疼痛、休息后缓解' }
+  ],
+  '肩周炎': [
+    { name: '肩关节活动', method: '测试肩关节各方向活动', standard: '外展、后伸受限' }
+  ],
+  '网球肘': [
+    { name: '握力测试', method: '握拳、拧毛巾观察疼痛', standard: '肘外侧疼痛加重' }
+  ],
+  '白内障': [
+    { name: '视力观察', method: '单眼视物观察清晰度', standard: '视物模糊、眩光' }
+  ],
+  '青光眼': [
+    { name: '眼压感觉', method: '观察眼胀、头痛', standard: '眼胀伴头痛、虹视' }
+  ],
+  '中耳炎': [
+    { name: '听力观察', method: '比较双耳听力', standard: '患耳听力下降' }
+  ],
+  '扁桃体炎': [
+    { name: '咽部观察', method: '对着镜子观察咽部', standard: '扁桃体红肿、有脓点' }
+  ],
+  '荨麻疹': [
+    { name: '皮疹观察', method: '观察皮疹形态和持续时间', standard: '风团、24小时内消退' }
+  ],
+  '带状疱疹': [
+    { name: '皮疹观察', method: '观察皮疹分布', standard: '单侧带状分布、水疱' }
+  ],
+  '银屑病': [
+    { name: '皮疹观察', method: '观察皮疹特征', standard: '红斑上覆银白色鳞屑' }
+  ],
+  '过敏性紫癜': [
+    { name: '皮疹观察', method: '观察下肢皮疹', standard: '紫红色出血点、压之不褪色' }
+  ],
+  '系统性红斑狼疮': [
+    { name: '面部观察', method: '观察面部皮疹', standard: '蝶形红斑' }
+  ],
+  '干燥综合征': [
+    { name: '口干眼干评估', method: '评估口干、眼干程度', standard: '需频繁饮水、眼干不适' }
+  ],
+  '缺铁性贫血': [
+    { name: '指甲观察', method: '观察指甲形态', standard: '匙状甲、苍白' }
+  ],
+  '巨幼细胞贫血': [
+    { name: '舌部观察', method: '观察舌部情况', standard: '舌红、光滑' }
+  ],
+  '肝硬化': [
+    { name: '腹部观察', method: '观察腹部是否膨隆', standard: '腹胀、腹水' }
+  ],
+  '急性胃肠炎': [
+    { name: '症状观察', method: '观察腹泻、呕吐情况', standard: '水样便、频繁呕吐' }
+  ],
+  '阑尾炎': [
+    { name: '腹痛定位', method: '按压右下腹观察疼痛', standard: '麦氏点压痛' }
+  ],
+  '痔疮': [
+    { name: '肛门观察', method: '观察肛门是否有肿物', standard: '肛周肿物、便血' }
+  ],
+  '功能性消化不良': [
+    { name: '症状记录', method: '记录餐后不适症状', standard: '早饱、饱胀感' }
+  ],
+  '慢性胃炎': [
+    { name: '症状记录', method: '记录上腹不适症状', standard: '上腹隐痛、嗳气' }
+  ],
+  '肝功能异常': [
+    { name: '症状观察', method: '观察乏力、食欲情况', standard: '明显乏力、食欲差' }
+  ],
+  '高脂血症': [
+    { name: '体重监测', method: '测量体重、计算BMI', standard: 'BMI≥24为超重' }
+  ],
+  '高尿酸血症': [
+    { name: '关节观察', method: '观察关节是否有红肿', standard: '关节红肿热痛' }
+  ],
+  '维生素D缺乏': [
+    { name: '骨骼观察', method: '观察骨骼疼痛情况', standard: '骨痛、肌肉无力' }
+  ],
+  '慢性疲劳综合征': [
+    { name: '疲劳评估', method: '评估疲劳程度和恢复情况', standard: '持续疲劳>6个月' }
+  ],
+  '阿尔茨海默病': [
+    { name: '记忆测试', method: '简单记忆测试', standard: '近期记忆明显下降' }
+  ],
+  '脑卒中': [
+    { name: 'FAST评估', method: '面部、手臂、语言测试', standard: '口角歪斜、肢体无力、言语不清' }
+  ],
+  '心律失常': [
+    { name: '脉搏检查', method: '测量脉搏是否规律', standard: '脉搏不齐' }
+  ],
+  '心力衰竭': [
+    { name: '水肿检查', method: '按压下肢观察凹陷', standard: '下肢凹陷性水肿' }
+  ],
+  '心肌炎': [
+    { name: '症状观察', method: '观察心悸、乏力情况', standard: '感冒后心悸、乏力' }
+  ],
+  '植物神经功能紊乱': [
+    { name: '症状记录', method: '记录多系统症状', standard: '多系统症状、检查正常' }
   ]
 };
 
@@ -11922,15 +12559,51 @@ function buildRiskCardHTML(disease, risk, percent, hitKeywords) {
   return html;
 }
 
+// 反馈风险卡片（不自动加入数据，只提供测试入口）
+function buildFeedbackRiskCard(disease, risk, percent, hitKeywords) {
+  var urgency = risk.urgency || getDiseaseUrgency(disease);
+  var advice = MEDICAL_ADVICE[disease] || {};
+  var isEmergency = (urgency === 'emergency' || urgency === 'acute');
+
+  var html = '<div class="bg-white rounded-xl p-4 border-2 ' + getUrgencyBorderColor(urgency) + ' mb-3">';
+  html += '<div class="flex items-center justify-between mb-2">';
+  html += '<div class="flex items-center gap-2">';
+  html += '<span class="text-sm font-bold text-gray-800">' + disease + '</span>';
+  html += '<span class="text-xs px-2 py-0.5 rounded-full ' + getUrgencyColorClass(urgency) + '">' + getUrgencyLabel(urgency) + '</span>';
+  html += '<span class="text-lg font-bold ' + (percent >= 60 ? 'text-red-500' : percent >= 30 ? 'text-orange-500' : 'text-green-500') + '">' + percent + '%</span>';
+  html += '</div></div>';
+
+  // 显示匹配的关键词
+  if (hitKeywords && hitKeywords.length > 0) {
+    html += '<p class="text-xs text-gray-500 mb-1">匹配症状：';
+    html += hitKeywords.map(function(kw) { return '<span class="inline-block bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded mr-1 mb-1">' + kw + '</span>'; }).join('');
+    html += '</p>';
+  }
+
+  if (advice.department) {
+    html += '<p class="text-xs text-gray-600 mb-1"><span class="font-medium">推荐科室：</span>' + advice.department + '</p>';
+  }
+  if (advice.recommendedTests && advice.recommendedTests.length > 0) {
+    html += '<p class="text-xs text-gray-600 mb-2"><span class="font-medium">建议检查：</span>' + advice.recommendedTests.join('、') + '</p>';
+  }
+
+  if (isEmergency) {
+    html += '<div class="bg-red-50 rounded-lg p-3 mb-3 border border-red-200">';
+    html += '<p class="text-sm text-red-700 font-bold">🚨 请尽快前往医院就诊！</p>';
+    html += '<p class="text-xs text-red-600 mt-1">该疾病可能需要紧急医疗处理，请勿拖延。</p>';
+    html += '</div>';
+  }
+
+  // 只有去测试确认按钮，没有忽略按钮
+  html += '<button onclick="goToTestForDisease(\'' + disease + '\')" class="w-full text-center text-xs bg-primary text-white py-2 rounded-lg hover:bg-primary-dark transition-colors">去测试确认</button>';
+  html += '</div>';
+  return html;
+}
+
 function goToTestForDisease(disease) {
   closeModal('modal-feedback');
-  // 确保疾病在 diseases 列表中
-  var diseases = lsGet('diseases') || [];
-  if (!diseases.includes(disease) && DISEASE_DB[disease]) {
-    diseases.push(disease);
-    lsSet('diseases', diseases);
-  }
-  openTest();
+  // 直接开始该疾病的测试，不自动添加到diseases列表
+  startDiseaseTest(disease);
 }
 
 function dismissDiseaseRisk(disease) {
@@ -12052,38 +12725,22 @@ function submitFeedback() {
         '<p class="text-xs text-gray-400 mt-2">⚠️ 仅进行风险提示，不作为疾病诊断依据</p>';
       respEl.className = 'mt-4 p-4 bg-primary-light rounded-xl text-sm text-gray-700';
     } else {
-      // 显示多种可能疾病
+      // 显示多种可能疾病，但不自动加入任何数据
       var riskHtml = '<div class="space-y-2">';
       riskHtml += '<div class="bg-blue-50 rounded-lg p-3 mb-3 border border-blue-200">';
       riskHtml += '<p class="text-sm text-blue-700 font-medium">🔍 根据你的描述，可能涉及以下健康问题：</p>';
-      riskHtml += '<p class="text-xs text-blue-500 mt-1">以下为初步风险提示，建议通过测试进一步确认</p>';
+      riskHtml += '<p class="text-xs text-blue-500 mt-1">点击"去测试确认"进行详细评估，测试后才会更新档案</p>';
       riskHtml += '</div>';
 
       var hasEmergency = false;
       filteredRisks.forEach(function(item) {
-        var risk = updateDiseaseRisk(item.disease, 'feedback');
-        var urgency = risk.urgency || getDiseaseUrgency(item.disease);
+        // 仅显示风险，不更新disease_risks，不添加学习计划
+        var urgency = getDiseaseUrgency(item.disease);
         if (urgency === 'emergency' || urgency === 'acute') hasEmergency = true;
 
-        // 记录反馈识别的百分比
-        var diseaseRisks2 = lsGet('disease_risks') || {};
-        if (diseaseRisks2[item.disease]) {
-          diseaseRisks2[item.disease].feedbackPercent = item.basePercent;
-          lsSet('disease_risks', diseaseRisks2);
-        }
-
-        // 使用 basePercent 作为初始百分比
-        riskHtml += buildRiskCardHTML(item.disease, risk, item.basePercent, item.hitKeywords);
-
-        // 自动将疾病添加到学习计划
-        autoAddDiseaseLearningCards(item.disease);
-        if (DISEASE_DB[item.disease]) {
-          var diseases = lsGet('diseases') || [];
-          if (!diseases.includes(item.disease)) {
-            diseases.push(item.disease);
-            lsSet('diseases', diseases);
-          }
-        }
+        // 构建临时risk对象用于显示
+        var tempRisk = { urgency: urgency, level: 'low', count: 1 };
+        riskHtml += buildFeedbackRiskCard(item.disease, tempRisk, item.basePercent, item.hitKeywords);
       });
 
       if (hasEmergency) {
@@ -12094,7 +12751,7 @@ function submitFeedback() {
 
       // 合规免责声明
       riskHtml += '<div class="bg-gray-50 rounded-lg p-3 mt-3 border border-gray-200">';
-      riskHtml += '<p class="text-xs text-gray-500 text-center">⚠️ 以上结果仅进行风险提示，不作为疾病诊断依据。如有不适请及时就医。</p>';
+      riskHtml += '<p class="text-xs text-gray-500 text-center">⚠️ 以上结果仅进行风险提示，不作为疾病诊断依据。点击"去测试确认"后才会加入测一下。</p>';
       riskHtml += '</div>';
 
       riskHtml += '</div>';
@@ -12110,7 +12767,7 @@ function submitFeedback() {
     var responses2 = { '很好': '很高兴你今天状态不错！保持好心情，健康与你同行。', '一般': '记录下来了。注意休息，适当运动，保持规律作息。' };
     var resp2 = responses2[currentQuickTag] || '感谢你的反馈，已记录到健康档案。';
     respEl.innerHTML = '<p class="text-sm text-gray-600">' + resp2 + '</p><p class="text-xs text-gray-400 mt-2">⚠️ 仅进行风险提示，不作为疾病诊断依据</p>';
-    respEl.className = 'mt-4 p-4 bg-primary-light rounded-xl text-sm text-gray-700';
+    respEl.className = 'mt-4 p-4 bg-primary-light rounded-xl text-sm text-gray-gray-700';
   }
 
   updateHealthScore(); renderFeedbackHistory();
@@ -12151,9 +12808,10 @@ function openTest() {
   var allDiseases = Object.keys(diseaseRisks);
   diseases.forEach(function(d) { if (!allDiseases.includes(d)) allDiseases.push(d); });
 
+  // 如果没有疾病，显示所有可测试的疾病列表
   if (allDiseases.length === 0) {
-    showToast('请先在档案设置疾病史或在反馈中描述症状');
-    return;
+    // 显示所有有测试数据的疾病供选择
+    allDiseases = Object.keys(QUESTIONNAIRE_DB);
   }
 
   // 渲染疾病选择列表（带历史风险百分比）
@@ -12661,29 +13319,25 @@ function saveTestReport() {
   testReports.push(report);
   lsSet('test_reports', testReports);
 
-  // 低风险自动清理：测试结果 <20% 自动从风险中移除
-  if (riskPercent < 20) {
-    var diseaseRisks = lsGet('disease_risks') || {};
-    delete diseaseRisks[disease];
-    lsSet('disease_risks', diseaseRisks);
-    // 同时清理学习计划
-    var myPlan = lsGet('my_plan') || [];
-    myPlan = myPlan.filter(function(p) { return p.disease !== disease; });
-    lsSet('my_plan', myPlan);
-    showToast('测试风险低于20%，已自动清除该疾病风险提示');
-  } else {
+  // 测试完成后才更新疾病风险和学习计划
+  // 低风险不加入任何数据
+  if (riskPercent >= 20) {
     // 更新疾病风险
     updateDiseaseRisk(disease, 'test');
+    // 添加学习计划（只有通过测一下确认后才添加）
     autoAddDiseaseLearningCards(disease);
-    // 如果高风险，添加到疾病史
-    if (riskPercent >= 60) {
-      var diseases = lsGet('diseases') || [];
-      if (!diseases.includes(disease)) {
-        diseases.push(disease);
-        lsSet('diseases', diseases);
-      }
+    
+    // 添加到疾病史（测试确认后才加入）
+    var diseases = lsGet('diseases') || [];
+    if (!diseases.includes(disease)) {
+      diseases.push(disease);
+      lsSet('diseases', diseases);
     }
-    showToast('测试报告已保存');
+    
+    showToast('测试报告已保存，已更新健康档案');
+  } else {
+    // 低风险，不加入疾病史和学习计划
+    showToast('测试风险较低，未加入疾病史');
   }
 
   updateHealthScore();
