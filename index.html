@@ -12602,7 +12602,13 @@ function buildFeedbackRiskCard(disease, risk, percent, hitKeywords) {
 
 function goToTestForDisease(disease) {
   closeModal('modal-feedback');
-  // 直接开始该疾病的测试，不自动添加到diseases列表
+  // 将疾病添加到测一下列表（test_diseases）供后续测试使用
+  var testDiseases = lsGet('test_diseases') || [];
+  if (!testDiseases.includes(disease)) {
+    testDiseases.push(disease);
+    lsSet('test_diseases', testDiseases);
+  }
+  // 直接开始该疾病的测试
   startDiseaseTest(disease);
 }
 
@@ -12804,49 +12810,110 @@ let hospitalTestResults = {};
 function openTest() {
   var diseaseRisks = lsGet('disease_risks') || {};
   var diseases = lsGet('diseases') || [];
+  var testDiseases = lsGet('test_diseases') || []; // 测一下列表
 
-  var allDiseases = Object.keys(diseaseRisks);
+  // 合并所有疾病：疾病史 + 风险疾病 + 测一下列表
+  var allDiseases = [...testDiseases];
+  Object.keys(diseaseRisks).forEach(function(d) { if (!allDiseases.includes(d)) allDiseases.push(d); });
   diseases.forEach(function(d) { if (!allDiseases.includes(d)) allDiseases.push(d); });
-
-  // 如果没有疾病，显示所有可测试的疾病列表
-  if (allDiseases.length === 0) {
-    // 显示所有有测试数据的疾病供选择
-    allDiseases = Object.keys(QUESTIONNAIRE_DB);
-  }
 
   // 渲染疾病选择列表（带历史风险百分比）
   var testReports = lsGet('test_reports') || [];
   var container = document.getElementById('test-content');
 
-  var html = '<div class="mb-4"><h3 class="text-sm font-semibold text-gray-700">选择要测试的疾病</h3></div>';
-  html += '<div class="space-y-2">';
-
-  allDiseases.forEach(function(disease) {
-    var risk = diseaseRisks[disease];
-    var latestReport = null;
-    testReports.forEach(function(r) { if (r.disease === disease) latestReport = r; });
-    var riskPercent = latestReport ? latestReport.riskScore : (risk ? (risk.level === 'critical' ? 80 : risk.level === 'high' ? 60 : risk.level === 'medium' ? 40 : 20) : null);
-
-    var riskColor = riskPercent >= 60 ? 'text-red-500' : riskPercent >= 30 ? 'text-orange-500' : riskPercent !== null ? 'text-green-500' : 'text-gray-400';
-
-    html += '<button onclick="startDiseaseTest(\'' + disease + '\')" class="w-full bg-gray-50 rounded-xl p-4 text-left hover:bg-gray-100 transition-colors flex items-center justify-between">';
-    html += '<div><span class="font-medium text-gray-700 text-sm">' + disease + '</span>';
-    if (latestReport) {
-      var date = new Date(latestReport.timestamp);
-      html += '<p class="text-xs text-gray-400 mt-0.5">上次测试: ' + (date.getMonth()+1) + '/' + date.getDate() + '</p>';
-    }
-    html += '</div>';
-    if (riskPercent !== null) {
-      html += '<span class="text-lg font-bold ' + riskColor + '">' + riskPercent + '%</span>';
-    }
-    html += '</button>';
-  });
-
+  var html = '<div class="mb-4 flex items-center justify-between">';
+  html += '<h3 class="text-sm font-semibold text-gray-700">选择要测试的疾病</h3>';
+  html += '<button onclick="showAddTestDisease()" class="text-xs bg-primary text-white px-3 py-1.5 rounded-lg">+ 添加疾病</button>';
   html += '</div>';
+  
+  if (allDiseases.length === 0) {
+    html += '<div class="text-center py-8 text-gray-400">';
+    html += '<p class="text-sm">暂无待测试疾病</p>';
+    html += '<p class="text-xs mt-2">点击"+ 添加疾病"或从反馈中添加</p>';
+    html += '</div>';
+  } else {
+    html += '<div class="space-y-2">';
+    allDiseases.forEach(function(disease) {
+      var risk = diseaseRisks[disease];
+      var latestReport = null;
+      testReports.forEach(function(r) { if (r.disease === disease) latestReport = r; });
+      var riskPercent = latestReport ? latestReport.riskScore : (risk ? (risk.level === 'critical' ? 80 : risk.level === 'high' ? 60 : risk.level === 'medium' ? 40 : 20) : null);
+      var riskColor = riskPercent >= 60 ? 'text-red-500' : riskPercent >= 30 ? 'text-orange-500' : riskPercent !== null ? 'text-green-500' : 'text-gray-400';
+      var isFromTestList = testDiseases.includes(disease);
+
+      html += '<div class="w-full bg-gray-50 rounded-xl p-4 flex items-center justify-between">';
+      html += '<button onclick="startDiseaseTest(\'' + disease + '\')" class="flex-1 text-left">';
+      html += '<div><span class="font-medium text-gray-700 text-sm">' + disease + '</span>';
+      if (latestReport) {
+        var date = new Date(latestReport.timestamp);
+        html += '<p class="text-xs text-gray-400 mt-0.5">上次测试: ' + (date.getMonth()+1) + '/' + date.getDate() + '</p>';
+      } else if (isFromTestList) {
+        html += '<p class="text-xs text-blue-400 mt-0.5">来自反馈提示</p>';
+      }
+      html += '</div>';
+      html += '</button>';
+      html += '<div class="flex items-center gap-2">';
+      if (riskPercent !== null) {
+        html += '<span class="text-lg font-bold ' + riskColor + '">' + riskPercent + '%</span>';
+      }
+      html += '<button onclick="removeTestDisease(\'' + disease + '\')" class="text-gray-400 hover:text-red-500 text-sm px-2" title="从列表移除">×</button>';
+      html += '</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+  
   html += '<div class="mt-3"><p class="text-xs text-gray-400 text-center">⚠️ 测试结果仅进行风险提示，不作为疾病诊断依据</p></div>';
-  html += '<div class="mt-4"><button onclick="closeModal(\'modal-test\')" class="w-full px-4 py-2 bg-gray-100 text-gray-600 rounded-lg">取消</button></div>';
+  html += '<div class="mt-4"><button onclick="closeModal(\'modal-test\')" class="w-full px-4 py-2 bg-gray-100 text-gray-600 rounded-lg">关闭</button></div>';
 
   container.innerHTML = html;
+  openModal('modal-test');
+}
+
+// 添加疾病到测一下列表
+function showAddTestDisease() {
+  var allDiseases = Object.keys(QUESTIONNAIRE_DB).sort();
+  var testDiseases = lsGet('test_diseases') || [];
+  
+  var html = '<div class="mb-4"><h3 class="text-sm font-semibold text-gray-700">选择要添加的疾病</h3></div>';
+  html += '<div class="max-h-80 overflow-y-auto space-y-1">';
+  allDiseases.forEach(function(disease) {
+    var isAdded = testDiseases.includes(disease);
+    html += '<button onclick="addTestDisease(\'' + disease + '\')" class="w-full text-left px-4 py-2 rounded-lg ' + (isAdded ? 'bg-green-50 text-green-600' : 'bg-gray-50 hover:bg-gray-100') + ' text-sm flex items-center justify-between">';
+    html += '<span>' + disease + '</span>';
+    if (isAdded) html += '<span>✓ 已添加</span>';
+    html += '</button>';
+  });
+  html += '</div>';
+  html += '<div class="mt-4"><button onclick="openTest()" class="w-full px-4 py-2 bg-primary text-white rounded-lg">完成</button></div>';
+  
+  document.getElementById('test-content').innerHTML = html;
+}
+
+function addTestDisease(disease) {
+  var testDiseases = lsGet('test_diseases') || [];
+  if (!testDiseases.includes(disease)) {
+    testDiseases.push(disease);
+    lsSet('test_diseases', testDiseases);
+    showToast('已添加 ' + disease);
+  } else {
+    showToast(disease + ' 已在列表中');
+  }
+  // 刷新列表
+  showAddTestDisease();
+}
+
+function removeTestDisease(disease) {
+  var testDiseases = lsGet('test_diseases') || [];
+  var idx = testDiseases.indexOf(disease);
+  if (idx >= 0) {
+    testDiseases.splice(idx, 1);
+    lsSet('test_diseases', testDiseases);
+    showToast('已从测一下列表移除');
+  }
+  // 刷新列表
+  openTest();
+}
   openModal('modal-test');
 }
 
@@ -13318,6 +13385,14 @@ function saveTestReport() {
   var testReports = lsGet('test_reports') || [];
   testReports.push(report);
   lsSet('test_reports', testReports);
+
+  // 从测一下列表中移除（已完成测试）
+  var testDiseases = lsGet('test_diseases') || [];
+  var idx = testDiseases.indexOf(disease);
+  if (idx >= 0) {
+    testDiseases.splice(idx, 1);
+    lsSet('test_diseases', testDiseases);
+  }
 
   // 测试完成后才更新疾病风险和学习计划
   // 低风险不加入任何数据
@@ -13893,11 +13968,24 @@ function renderMyPlan() {
   const myPlan = lsGet('my_plan') || [];
   const container = document.getElementById('my-plan-list');
   const emptyEl = document.getElementById('plan-empty');
-  if (myPlan.length === 0) { container.innerHTML = ''; emptyEl.classList.remove('hidden'); return; }
+  
+  // 添加标题和添加按钮
+  var headerHtml = '<div class="flex items-center justify-between mb-3">';
+  headerHtml += '<span class="text-sm font-semibold text-gray-700">我的学习计划</span>';
+  headerHtml += '<button onclick="showAddLearning()" class="text-xs bg-primary text-white px-3 py-1.5 rounded-lg">+ 添加学习</button>';
+  headerHtml += '</div>';
+  
+  if (myPlan.length === 0) { 
+    container.innerHTML = headerHtml + '<div class="text-center py-4 text-gray-400 text-sm">暂无学习计划，点击"+ 添加学习"开始</div>'; 
+    emptyEl.classList.add('hidden'); 
+    return; 
+  }
+  
   emptyEl.classList.add('hidden');
   const today = getDateStr(Date.now());
   const todayCompleted = lsGet('today_completed') || {};
-  container.innerHTML = myPlan.map((p, i) => {
+  
+  var listHtml = myPlan.map((p, i) => {
     const isCompleted = todayCompleted[today]?.includes(p.id);
     return `<div class="bg-white rounded-xl p-4 border border-gray-100 flex items-center justify-between">
       <div class="flex items-center gap-3">
@@ -13909,9 +13997,86 @@ function renderMyPlan() {
           <p class="text-xs text-gray-400 mt-0.5">${formatDate(p.addedAt)} 加入</p>
         </div>
       </div>
-      <button onclick="removePlan(${i})" class="text-red-400 hover:text-red-600 text-sm">删除</button>
+      <button onclick="removePlan(${i})" class="text-red-400 hover:text-red-600 text-sm px-2">删除</button>
     </div>`;
   }).join('');
+  
+  container.innerHTML = headerHtml + listHtml;
+}
+
+// 显示添加学习界面
+function showAddLearning() {
+  var diseases = lsGet('diseases') || [];
+  var allDiseases = Object.keys(DISEASE_DB).sort();
+  
+  var html = '<div class="fixed inset-0 bg-black/50 z-50 flex items-end" onclick="if(event.target===event.currentTarget)closeAddLearning()">';
+  html += '<div class="bg-white w-full rounded-t-2xl p-4 max-h-96 overflow-hidden">';
+  html += '<div class="flex items-center justify-between mb-4">';
+  html += '<h3 class="text-lg font-semibold text-gray-800">添加学习项目</h3>';
+  html += '<button onclick="closeAddLearning()" class="text-gray-400 hover:text-gray-600">✕</button>';
+  html += '</div>';
+  
+  // 优先显示已有疾病史
+  if (diseases.length > 0) {
+    html += '<div class="mb-3"><span class="text-xs text-gray-500">我的疾病</span></div>';
+    html += '<div class="space-y-1 mb-4">';
+    diseases.forEach(function(d) {
+      if (DISEASE_DB[d]) {
+        html += '<button onclick="addLearningForDisease(\'' + d + '\')" class="w-full text-left px-4 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm">' + d + '</button>';
+      }
+    });
+    html += '</div>';
+  }
+  
+  // 所有疾病
+  html += '<div class="mb-3"><span class="text-xs text-gray-500">所有疾病</span></div>';
+  html += '<div class="max-h-48 overflow-y-auto space-y-1">';
+  allDiseases.forEach(function(d) {
+    html += '<button onclick="addLearningForDisease(\'' + d + '\')" class="w-full text-left px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-sm">' + d + '</button>';
+  });
+  html += '</div>';
+  
+  html += '</div></div>';
+  
+  var div = document.createElement('div');
+  div.id = 'add-learning-modal';
+  div.innerHTML = html;
+  document.body.appendChild(div);
+}
+
+function closeAddLearning() {
+  var modal = document.getElementById('add-learning-modal');
+  if (modal) modal.remove();
+}
+
+function addLearningForDisease(disease) {
+  if (!DISEASE_DB[disease] || !DISEASE_DB[disease].cards) {
+    showToast('暂无该疾病的学习内容');
+    return;
+  }
+  
+  var myPlan = lsGet('my_plan') || [];
+  var cards = DISEASE_DB[disease].cards;
+  var addedCount = 0;
+  
+  Object.keys(cards).forEach(function(key) {
+    var card = cards[key];
+    var planId = disease + '_' + key;
+    if (!myPlan.find(function(p) { return p.id === planId; })) {
+      myPlan.push({ id: planId, disease: disease, cardKey: key, title: disease + ' - ' + card.title, addedAt: Date.now(), completed: false });
+      addedCount++;
+    }
+  });
+  
+  if (addedCount > 0) {
+    lsSet('my_plan', myPlan);
+    showToast('已添加 ' + disease + ' 的 ' + addedCount + ' 个学习项目');
+  } else {
+    showToast(disease + ' 的学习项目已存在');
+  }
+  
+  closeAddLearning();
+  renderMyPlan();
 }
 function completePlan(idx) {
   const myPlan = lsGet('my_plan') || [];
