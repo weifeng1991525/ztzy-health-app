@@ -6,7 +6,7 @@
 <title>知体知医 - 个性化健康管理</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
-tailwind.config = {
+const tailwindConfig = {
   theme: {
     extend: {
       colors: {
@@ -500,8 +500,8 @@ const DISEASE_DB = {
   "高血压": {
     "icon": "❤️",
     "cause": "原发性高血压与遗传、高盐饮食、肥胖、精神紧张、吸烟饮酒等因素相关。继发性高血压可由肾脏疾病、内分泌疾病等引起。",
-    "mechanism": "血管外周阻力增加和/或心输出量增加导致动脉血压持续升高，长期可导致血管内皮损伤和靶器官损害。",
-    "diagnosis": "收缩压≥140mmHg和/或舒张压≥90mmHg（非同日3次测量）。需排除白大衣高血压。",
+    "mechanism": "血管外周阻力增加和（或）心输出量增加导致动脉血压持续升高，长期可导致血管内皮损伤和靶器官损害。",
+    "diagnosis": "收缩压≥140mmHg和（或）舒张压≥90mmHg（非同日3次测量）。需排除白大衣高血压。",
     "treatment": "一线药物：ACEI/ARB、CCB、利尿剂、β受体阻滞剂。生活方式干预是基础。",
     "tcm": "肝阳上亢型（天麻钩藤饮）、痰湿内阻型（半夏白术天麻汤）、肝肾阴虚型（杞菊地黄丸）。",
     "department": "心内科",
@@ -558,7 +558,7 @@ const DISEASE_DB = {
     "icon": "💓",
     "cause": "原发性低血压与体质瘦弱、遗传有关；继发性低血压可由失血、脱水、心脏病、内分泌疾病、药物等引起。",
     "mechanism": "血压过低导致组织灌注不足，引起头晕、乏力、晕厥等症状。",
-    "diagnosis": "收缩压<90mmHg和/或舒张压<60mmHg，伴有头晕、乏力等症状。",
+    "diagnosis": "收缩压<90mmHg和（或）舒张压<60mmHg，伴有头晕、乏力等症状。",
     "treatment": "增加水和盐摄入，穿弹力袜，避免久站。药物：氟氢可的松、米多君等。",
     "tcm": "气血两虚型（归脾汤）、肾阳不足型（金匮肾气丸）、心脾两虚型（归脾汤）。",
     "department": "心内科",
@@ -884,7 +884,7 @@ const DISEASE_DB = {
   "心力衰竭": {
     "icon": "🫀",
     "cause": "冠心病、高血压、心肌病、心脏瓣膜病、心律失常、心肌炎等导致心功能下降。",
-    "mechanism": "心脏泵血功能下降，导致体循环和/或肺循环淤血，组织灌注不足。",
+    "mechanism": "心脏泵血功能下降，导致体循环和（或）肺循环淤血，组织灌注不足。",
     "diagnosis": "呼吸困难、乏力、水肿。BNP/NT-proBNP升高。心脏超声示EF下降。NYHA心功能分级。",
     "treatment": "药物治疗：ACEI/ARB/ARNI、β阻滞剂、醛固酮受体拮抗剂、利尿剂、地高辛。必要时CRT、ICD、心脏移植。",
     "tcm": "心肾阳虚型（真武汤）、气虚血瘀型（补阳还五汤）、痰饮阻肺型（葶苈大枣泻肺汤）。",
@@ -12914,8 +12914,6 @@ function removeTestDisease(disease) {
   // 刷新列表
   openTest();
 }
-  openModal('modal-test');
-}
 
 function startDiseaseTest(disease) {
   testState = {
@@ -13783,7 +13781,7 @@ li { margin-bottom: 3px; }
 
 <script>
 window.onload = function() { window.print(); };
-<\/script>
+</script>
 </body>
 </html>`;
   
