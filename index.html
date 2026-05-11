@@ -12908,13 +12908,34 @@ function addTestDisease(disease) {
 }
 
 function removeTestDisease(disease) {
+  // 从测一下列表移除
   var testDiseases = lsGet('test_diseases') || [];
   var idx = testDiseases.indexOf(disease);
   if (idx >= 0) {
     testDiseases.splice(idx, 1);
     lsSet('test_diseases', testDiseases);
-    showToast('已从测一下列表移除');
   }
+  // 从疾病史移除
+  var diseases = lsGet('diseases') || [];
+  var dIdx = diseases.indexOf(disease);
+  if (dIdx >= 0) {
+    diseases.splice(dIdx, 1);
+    lsSet('diseases', diseases);
+  }
+  // 从疾病风险移除
+  var diseaseRisks = lsGet('disease_risks') || {};
+  if (diseaseRisks[disease]) {
+    delete diseaseRisks[disease];
+    lsSet('disease_risks', diseaseRisks);
+  }
+  // 从学习计划移除
+  var myPlan = lsGet('my_plan') || [];
+  var filtered = myPlan.filter(function(p) { return p.disease !== disease; });
+  if (filtered.length !== myPlan.length) {
+    lsSet('my_plan', filtered);
+  }
+  showToast('已移除 ' + disease);
+  updateHealthScore();
   // 刷新列表
   openTest();
 }
