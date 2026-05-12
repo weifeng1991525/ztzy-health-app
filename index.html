@@ -13079,6 +13079,17 @@ function renderQuestionnaire(container, disease) {
   container.innerHTML = html;
 }
 
+// 从测试结果页直接加入学习计划
+function addDiseaseLearningFromTest(disease) {
+  autoAddDiseaseLearningCards(disease);
+  var myPlan = lsGet('my_plan') || [];
+  var hasPlan = myPlan.some(function(p) { return p.disease === disease; });
+  if (hasPlan) {
+    showToast('已加入学习计划，可在"我要提分→我的计划"中查看');
+    renderTestStage();
+  }
+}
+
 function selectQuestionnaireAnswer(questionId, optionIndex, weight, btn) {
   // 取消同组其他按钮选中状态
   document.querySelectorAll('[data-question="' + questionId + '"]').forEach(function(b) {
@@ -13424,6 +13435,60 @@ function renderRiskReport(container, disease) {
     '</div>';
   }
   
+  // 学习卡片（风险≥20%时展示）
+  if (riskPercent >= 20 && diseaseInfo.cards) {
+    html += '<div class="mt-4 mb-4">';
+    html += '<div class="flex items-center gap-2 mb-3">';
+    html += '<span class="text-sm font-bold text-gray-700">📚 学习建议</span>';
+    html += '<span class="text-xs text-gray-400">掌握这些知识，有效降低风险</span>';
+    html += '</div>';
+    html += '<div class="space-y-3">';
+
+    var cardIcons = { mind: '🧠', diet: '🥗', exercise: '🏃', environment: '🌿', sleep: '😴' };
+    var cardNames = { mind: '心理调养', diet: '饮食建议', exercise: '运动处方', environment: '环境调节', sleep: '睡眠管理' };
+
+    Object.keys(diseaseInfo.cards).forEach(function(key) {
+      var card = diseaseInfo.cards[key];
+      var cardHtml = '<div class="bg-white rounded-xl p-4 border border-gray-100">';
+      cardHtml += '<div class="flex items-center gap-2 mb-2">';
+      cardHtml += '<span>' + (card.icon || cardIcons[key] || '📌') + '</span>';
+      cardHtml += '<span class="text-sm font-semibold text-gray-700">' + (card.title || cardNames[key] || key) + '</span>';
+      cardHtml += '</div>';
+
+      if (card.content) {
+        cardHtml += '<p class="text-xs text-gray-600 leading-relaxed">' + card.content + '</p>';
+      }
+      if (card.recommend) {
+        var recList = Array.isArray(card.recommend) ? card.recommend : card.recommend.split('\n');
+        cardHtml += '<div class="mt-2"><p class="text-xs font-medium text-green-600 mb-1">推荐：</p>';
+        recList.forEach(function(item) { cardHtml += '<p class="text-xs text-gray-600 ml-2">• ' + item + '</p>'; });
+        cardHtml += '</div>';
+      }
+      if (card.avoid) {
+        var avoidList = Array.isArray(card.avoid) ? card.avoid : card.avoid.split('\n');
+        cardHtml += '<div class="mt-1"><p class="text-xs font-medium text-red-500 mb-1">避免：</p>';
+        avoidList.forEach(function(item) { cardHtml += '<p class="text-xs text-gray-600 ml-2">• ' + item + '</p>'; });
+        cardHtml += '</div>';
+      }
+
+      cardHtml += '</div>';
+      html += cardHtml;
+    });
+
+    html += '</div>';
+
+    // 添加"加入学习计划"按钮
+    var myPlan = lsGet('my_plan') || [];
+    var hasPlan = myPlan.some(function(p) { return p.disease === disease; });
+    if (!hasPlan) {
+      html += '<button onclick="addDiseaseLearningFromTest(\'' + disease.replace(/'/g, "\\'") + '\')" class="w-full py-3 bg-primary text-white rounded-xl font-medium text-sm">+ 将学习内容加入我的计划</button>';
+    } else {
+      html += '<div class="text-center py-2 text-xs text-primary">✓ 已加入学习计划</div>';
+    }
+
+    html += '</div>';
+  }
+
   // 测试汇总
   html += '<div class="bg-gray-50 rounded-xl p-4 mb-4">' +
     '<h4 class="font-medium text-gray-700 mb-3">测试汇总</h4>' +
