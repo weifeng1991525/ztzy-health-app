@@ -460,6 +460,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
             <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="尿崩症">尿崩症</button>
             <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="骨质疏松">骨质疏松</button>
             <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="胃炎">胃炎</button>
+            <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="胃动力不足">胃动力不足</button>
             <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="胃溃疡">胃溃疡</button>
             <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="十二指肠溃疡">十二指肠溃疡</button>
             <button onclick="toggleDisease(this)" class="tag bg-gray-100 text-gray-600" data-disease="胃食管反流病">胃食管反流病</button>
@@ -2903,6 +2904,62 @@ const DISEASE_DB = {
         "icon": "😴",
         "title": "睡眠管理",
         "content": "建议左侧卧位（减少胃酸反流）。晚餐不宜过饱，睡前3小时不进食。"
+      }
+    }
+  },
+  "胃动力不足": {
+    "icon": "🐢",
+    "cause": "胃排空延迟，常见原因：糖尿病性胃轻瘫、精神心理因素（焦虑、抑郁）、药物副作用（阿片类、抗胆碱能药物）、手术后胃动力改变、长期饮食不规律。",
+    "mechanism": "胃平滑肌收缩减弱或胃电节律紊乱，导致胃排空延迟，食物在胃内滞留，产生早饱、腹胀、恶心等症状。",
+    "diagnosis": "胃排空检查（核素胃排空试验或13C呼气试验）为金标准。胃镜排除器质性病变。上消化道钡餐。",
+    "treatment": "促胃动力药（多潘立酮、莫沙必利、伊托必利）。根除Hp（如有感染）。对症治疗：消化酶、益生菌。",
+    "tcm": "脾胃虚弱型（香砂六君子汤）、食积内停型（保和丸）、肝郁脾虚型（逍遥散合四君子汤）、胃阴不足型（益胃汤）。",
+    "department": "消化内科",
+    "urgency": "routine",
+    "recommendedTests": [
+      "胃排空试验",
+      "胃镜",
+      "腹部B超",
+      "血糖（排除糖尿病）"
+    ],
+    "cards": {
+      "mind": {
+        "icon": "🧠",
+        "title": "心理调养",
+        "content": "胃被称为\"第二大脑\"，情绪直接影响胃肠动力。焦虑、紧张会抑制胃排空。建议通过正念冥想、深呼吸放松、规律作息来改善心理状态。"
+      },
+      "diet": {
+        "icon": "🥗",
+        "title": "饮食建议",
+        "recommend": [
+          "少食多餐，每日5-6餐",
+          "易消化食物：粥、蒸蛋、软面条",
+          "低脂饮食（脂肪延缓胃排空）",
+          "生姜水（促进胃蠕动）",
+          "山药、白术（健脾益气）"
+        ],
+        "avoid": [
+          "高脂肪食物（油炸、肥肉）",
+          "高纤维食物（粗粮、芹菜）",
+          "碳酸饮料",
+          "过冷过热的食物",
+          "暴饮暴食"
+        ]
+      },
+      "exercise": {
+        "icon": "🏃",
+        "title": "运动处方",
+        "content": "饭后慢走30分钟促进胃排空。推荐：散步、太极拳、八段锦中的\"调理脾胃须单举\"。避免饭后立即平躺，保持直立姿势至少2小时。"
+      },
+      "environment": {
+        "icon": "🌿",
+        "title": "环境调节",
+        "content": "保持进餐环境安静舒适，细嚼慢咽。避免在紧张、焦虑状态下进食。注意腹部保暖，寒冷会抑制胃肠蠕动。"
+      },
+      "sleep": {
+        "icon": "😴",
+        "title": "睡眠管理",
+        "content": "晚餐宜清淡少量，睡前3小时不进食。左侧卧位有助于胃排空。保持规律作息，避免熬夜影响自主神经功能。"
       }
     }
   },
@@ -11306,6 +11363,13 @@ const QUESTIONNAIRE_DB = {
     { id: 'q_g3', question: '您是否经常饮食不规律？', options: ['是', '否'], weights: [2, 0] },
     { id: 'q_g4', question: '您是否经常吃辛辣刺激食物？', options: ['经常', '偶尔', '从不'], weights: [1, 0.5, 0] }
   ],
+  '胃动力不足': [
+    { id: 'q_gd1', question: '您是否经常感到饭后腹胀、早饱（吃一点就饱）？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
+    { id: 'q_gd2', question: '您是否有恶心、干呕或食欲明显下降？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_gd3', question: '您是否有腹胀、消化不良？', options: ['经常', '偶尔', '从不'], weights: [2, 1, 0] },
+    { id: 'q_gd4', question: '您是否长期情绪紧张、焦虑或压力大？', options: ['是', '否'], weights: [2, 0] },
+    { id: 'q_gd5', question: '您是否有糖尿病或长期服用某些药物？', options: ['是', '否'], weights: [2, 0] }
+  ],
   '胃溃疡': [
     { id: 'q_gu1', question: '您是否有餐后上腹痛？', options: ['经常', '偶尔', '从不'], weights: [3, 1, 0] },
     { id: 'q_gu2', question: '您是否有黑便史？', options: ['是', '否'], weights: [3, 0] },
@@ -12325,6 +12389,7 @@ const SYMPTOM_DISEASE_MAP = {
   '高血压': ['头晕', '头痛', '血压高', '血压', '头昏', '眩晕', '心悸', '耳鸣', '后脑痛', '视物模糊'],
   '糖尿病': ['多饮', '多尿', '多食', '血糖', '口渴', '消瘦', '尿频', '皮肤瘙痒', '伤口不愈', '手脚麻木'],
   '胃炎': ['胃痛', '胃胀', '反酸', '烧心', '胃不适', '恶心', '胃酸', '上腹痛', '饭后胀', '嗳气', '食欲不振', '肚子疼', '腹痛'],
+  '胃动力不足': ['胃胀', '腹胀', '早饱', '恶心', '食欲不振', '消化不良', '胃排空', '胃轻瘫', '动力不足', '饭后胀', '肚子胀', '吃一点就饱', '胃蠕动慢', '不消化'],
   '十二指肠溃疡': ['空腹痛', '夜间痛', '饥饿痛', '反酸', '黑便', '十二指肠', '肚子疼', '腹痛', '饭后痛'],
   '肠炎': ['腹泻', '拉肚子', '腹痛', '肚子疼', '腹胀', '大便次数多', '黏液便', '里急后重', '肠鸣'],
   '胃溃疡': ['胃痛', '饭后痛', '反酸', '黑便', '呕血', '上腹痛', '肚子疼', '腹痛', '体重下降'],
