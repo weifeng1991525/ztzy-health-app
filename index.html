@@ -174,7 +174,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
     </div>
 
     <!-- 添加疾病搜索模态框 -->
-    <div id="modal-disease-search" class="modal-overlay" onclick="closeOnOverlay(event,'modal-disease-search')">
+    <div id="modal-disease-search" class="modal-overlay" style="z-index: 150;" onclick="closeOnOverlay(event,'modal-disease-search')">
       <div class="modal-content" style="max-height:80vh;" onclick="event.stopPropagation()">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-bold text-gray-800">🔍 添加疾病</h2>
@@ -13365,9 +13365,13 @@ function addTestDiseaseFromSearch(diseaseName) {
   testDiseases.push(diseaseName);
   lsSet('test_diseases', testDiseases);
   showToast('已添加「' + diseaseName + '」到测一下列表');
-  renderDiseaseResultsForTest();
-  // 同时刷新测一下页面
-  openTest();
+  // 关闭搜索模态框，重新打开测一下
+  closeModal('modal-disease-search');
+  isAddingForTest = false;
+  setTimeout(function() {
+    openModal('modal-test');
+    openTest();
+  }, 200);
 }
 
 function addTestDisease(disease) {
@@ -14686,7 +14690,7 @@ function addDiseaseFromSearch(diseaseName) {
   diseases.push(diseaseName);
   lsSet('diseases', diseases);
   showToast('已添加「' + diseaseName + '」到学习列表');
-  renderDiseaseResults();
+  closeModal('modal-disease-search');
   renderDiseaseAccordion();
   updateHealthScore();
 }
