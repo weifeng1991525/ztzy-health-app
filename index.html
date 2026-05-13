@@ -124,9 +124,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
     <!-- 2×2 功能网格（包含反馈、测试、提分、档案） -->
     <div class="grid grid-cols-2 gap-4">
       <div onclick="openFeedback()" class="card-hover bg-white rounded-2xl p-5 shadow-sm cursor-pointer">
-        <div class="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center mb-3 text-xl">🗣️</div>
-        <div class="font-semibold text-gray-800 text-sm mb-1">反馈下</div>
-        <div class="text-xs text-gray-400">记录今日身体感受</div>
+        <div class="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center mb-3 text-xl">📝</div>
+        <div class="font-semibold text-gray-800 text-sm mb-1">记录下</div>
+        <div class="text-xs text-gray-400">智能识别疾病风险</div>
       </div>
       <div onclick="openTest()" class="card-hover bg-white rounded-2xl p-5 shadow-sm cursor-pointer">
         <div class="w-11 h-11 rounded-xl bg-purple-50 flex items-center justify-center mb-3 text-xl">🔍</div>
@@ -361,11 +361,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
     </div>
   </div>
 
-  <!-- 模块一：反馈下 模态框 -->
+  <!-- 模块一：记录下 模态框 -->
   <div id="modal-feedback" class="modal-overlay" onclick="closeOnOverlay(event,'modal-feedback')">
     <div class="modal-content" onclick="event.stopPropagation()">
       <div class="flex items-center justify-between mb-5">
-        <h2 class="text-lg font-bold text-gray-800">🗣️ 反馈下</h2>
+        <h2 class="text-lg font-bold text-gray-800">📝 记录下</h2>
         <button onclick="closeModal('modal-feedback')" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
@@ -12975,6 +12975,9 @@ function calculateHealthScore() {
   const profile = lsGet('profile') || {};
   const checkins = lsGet('checkins') || {};
   const aiScore = lsGet('ai_score') || 75;
+  const myPlan = lsGet('my_plan') || [];
+  
+  // 症状反馈得分 (25%)
   let symptomScore = 85;
   if (feedbacks.length > 0) {
     const recent = feedbacks.slice(-5);
@@ -12982,28 +12985,60 @@ function calculateHealthScore() {
     recent.forEach(f => { if (f.tag === '很好') total += 95; else if (f.tag === '一般') total += 70; else if (f.tag === '不舒服') total += 40; else total += 70; });
     symptomScore = total / recent.length;
   }
+  
+  // 风险评估得分 (15%) - 已完成测试且无异常得高分
   let riskScore = 80;
   if (testResult) {
     const results = testResult.results || [];
     const abnormal = results.filter(r => r.value === '异常').length;
-    riskScore = Math.max(20, 100 - abnormal * 15);
+    const normal = results.filter(r => r.value === '正常').length;
+    if (results.length > 0) {
+      riskScore = Math.min(100, 40 + (normal / results.length) * 60);
+    }
   }
+  
+  // 档案完整度 (10%)
   let completenessScore = 30;
   if (profile.nickname) completenessScore += 15;
   if (profile.age) completenessScore += 15;
   if (profile.gender) completenessScore += 10;
   if (profile.bloodType) completenessScore += 5;
-  const diseases = lsGet('diseases') || [];
-  if (diseases.length > 0) completenessScore += 10;
   completenessScore = Math.min(100, completenessScore);
+  
+  // 打卡坚持得分 (25%) - 提升权重
   let checkinScore = 50;
   const today = getDateStr(Date.now());
   const thisMonth = today.substring(0, 7);
   let monthDays = 0;
   Object.keys(checkins).forEach(key => { if (key.startsWith(thisMonth)) monthDays++; });
-  if (monthDays > 0) checkinScore = Math.min(100, 50 + monthDays * 5);
-  const total = Math.round(symptomScore * 0.30 + riskScore * 0.25 + completenessScore * 0.15 + checkinScore * 0.20 + aiScore * 0.10);
-  return { total };
+  // 本月打卡天数越多分数越高，上限100
+  checkinScore = Math.min(100, 30 + monthDays * 7);
+  
+  // 学习计划得分 (15%) - 新增维度
+  let learningScore = 50;
+  const completedItems = myPlan.filter(p => p.completed).length;
+  const totalItems = myPlan.length;
+  if (totalItems > 0) {
+    // 完成率 × 80 + 基础分
+    learningScore = Math.min(100, 20 + (completedItems / totalItems) * 80);
+  } else if (myPlan.length > 0) {
+    // 有计划但无完成，从基础分开始
+    learningScore = 20;
+  }
+  
+  // AI评估得分 (10%)
+  
+  // 综合分数计算
+  const total = Math.round(
+    symptomScore * 0.25 +     // 症状反馈 25%
+    riskScore * 0.15 +        // 风险评估 15%
+    completenessScore * 0.10 + // 档案完整 10%
+    checkinScore * 0.25 +     // 打卡坚持 25%
+    learningScore * 0.15 +     // 学习计划 15%
+    aiScore * 0.10            // AI评估 10%
+  );
+  
+  return { total, symptomScore, riskScore, completenessScore, checkinScore, learningScore, aiScore };
 }
 function getScoreColor(score) { if (score >= 90) return '#22C55E'; if (score >= 70) return '#84CC16'; if (score >= 50) return '#F97316'; return '#EF4444'; }
 function getScoreLabel(score) { if (score >= 90) return '优秀'; if (score >= 70) return '良好'; if (score >= 50) return '需关注'; return '需重视'; }
@@ -13024,7 +13059,7 @@ function updateHealthScore() {
 function animateNumber(id, target) { const el = document.getElementById(id); let current = 0; const step = Math.max(1, Math.ceil(target / 40)); const timer = setInterval(() => { current += step; if (current >= target) { current = target; clearInterval(timer); } el.textContent = current; el.style.color = getScoreColor(current); }, 30); }
 function initHome() { const profile = lsGet('profile') || {}; document.getElementById('home-nickname').textContent = profile.nickname || '未设置'; updateHealthScore(); }
 
-// ========== 模块一：反馈下 ==========
+// ========== 模块一：记录下 ==========
 let currentQuickTag = '';
 let uploadedFiles = [];
 function openFeedback() { currentQuickTag = ''; uploadedFiles = []; document.getElementById('feedback-text').value = ''; document.getElementById('file-list').innerHTML = ''; document.getElementById('feedback-response').classList.add('hidden'); document.querySelectorAll('#modal-feedback .tag').forEach(t => { t.classList.remove('ring-2', 'ring-offset-1'); }); renderFeedbackHistory(); openModal('modal-feedback'); }
@@ -15212,35 +15247,33 @@ function requestNotificationPermission() {
 
 // ========== 健康分详情 ==========
 function showScoreDetail() {
-  const scores = lsGet('health_score_detail') || {};
-  const total = lsGet('health_score') || 75;
+  const { total, symptomScore, riskScore, completenessScore, checkinScore, learningScore, aiScore } = calculateHealthScore();
   
   const dimensions = [
-    { key: 'symptom', label: '症状反馈', weight: 30, icon: '🗣️', tip: '记录每日身体状况' },
-    { key: 'risk', label: '风险评估', weight: 25, icon: '🔍', tip: '完成自测项目' },
-    { key: 'completeness', label: '档案完整', weight: 15, icon: '📋', tip: '完善健康档案' },
-    { key: 'checkin', label: '打卡坚持', weight: 20, icon: '✅', tip: '每日打卡' },
-    { key: 'ai', label: 'AI评估', weight: 10, icon: '🤖', tip: '提交反馈获取评估' }
+    { key: 'symptom', label: '症状反馈', weight: 25, icon: '📝', score: Math.round(symptomScore), tip: '记录每日身体状况' },
+    { key: 'risk', label: '风险评估', weight: 15, icon: '🔍', score: Math.round(riskScore), tip: '完成自测项目' },
+    { key: 'completeness', label: '档案完整', weight: 10, icon: '📋', score: Math.round(completenessScore), tip: '完善健康档案' },
+    { key: 'checkin', label: '打卡坚持', weight: 25, icon: '✅', score: Math.round(checkinScore), tip: '每日打卡可提升' },
+    { key: 'learning', label: '学习计划', weight: 15, icon: '📚', score: Math.round(learningScore), tip: '完成学习任务可提升' },
+    { key: 'ai', label: 'AI评估', weight: 10, icon: '🤖', score: Math.round(aiScore), tip: '提交反馈获取评估' }
   ];
   
   let html = '<div class="text-center mb-4">';
   html += '<div class="text-4xl font-bold text-primary mb-1">' + total + '</div>';
-  html += '<div class="text-sm text-gray-500">当前健康分</div>';
+  html += '<div class="text-sm text-gray-500">综合健康分</div>';
   html += '</div>';
   
   dimensions.forEach(d => {
-    const score = scores[d.key] || 70;
-    const barWidth = Math.round(score);
-    const contribution = Math.round(score * d.weight / 100);
+    const barWidth = Math.round(d.score);
     
-    html += '<div class="bg-gray-50 rounded-lg p-3">';
+    html += '<div class="bg-gray-50 rounded-lg p-3 mb-2">';
     html += '<div class="flex items-center justify-between mb-2">';
     html += '<div class="flex items-center gap-2">';
     html += '<span>' + d.icon + '</span>';
     html += '<span class="text-sm font-medium text-gray-700">' + d.label + '</span>';
     html += '<span class="text-xs text-gray-400">(' + d.weight + '%)</span>';
     html += '</div>';
-    html += '<span class="text-sm font-bold text-primary">' + score + '分</span>';
+    html += '<span class="text-sm font-bold text-primary">' + d.score + '分</span>';
     html += '</div>';
     html += '<div class="h-2 bg-gray-200 rounded-full overflow-hidden mb-2">';
     html += '<div class="h-full bg-primary rounded-full transition-all" style="width:' + barWidth + '%"></div>';
@@ -15248,6 +15281,11 @@ function showScoreDetail() {
     html += '<p class="text-xs text-gray-400">💡 ' + d.tip + '</p>';
     html += '</div>';
   });
+  
+  html += '<div class="text-xs text-gray-400 text-center pt-2 border-t mt-2">';
+  html += '<p>综合分数 = 各维度加权求和</p>';
+  html += '<p class="mt-1">坚持记录和打卡可持续提升分数</p>';
+  html += '</div>';
   
   document.getElementById('score-detail-content').innerHTML = html;
   openModal('modal-score-detail');
