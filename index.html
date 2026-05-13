@@ -101,7 +101,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
     <div class="bg-white rounded-3xl p-6 shadow-sm mb-6 fade-in-up">
       <div class="text-center mb-4"><span class="text-sm text-gray-400">综合健康分</span></div>
       <div class="flex justify-center mb-3">
-        <div class="relative w-44 h-44">
+        <div class="relative w-44 h-44 cursor-pointer" onclick="showScoreDetail()">
           <svg class="w-full h-full -rotate-90" viewBox="0 0 160 160">
             <circle cx="80" cy="80" r="70" stroke="#F0F0F0" stroke-width="12" fill="none"/>
             <circle id="score-arc" class="score-circle" cx="80" cy="80" r="70" stroke="#3ABFA8" stroke-width="12" fill="none" stroke-dasharray="439.82" stroke-dashoffset="439.82" stroke-linecap="round"/>
@@ -109,6 +109,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
           <div class="absolute inset-0 flex flex-col items-center justify-center">
             <span id="score-value" class="text-4xl font-bold text-gray-800">--</span>
             <span id="score-label" class="text-xs text-gray-400 mt-1">加载中</span>
+          </div>
+          <div class="absolute bottom-2 left-0 right-0 text-center">
+            <span class="text-xs text-primary">点击查看详情</span>
           </div>
         </div>
       </div>
@@ -302,7 +305,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
       </div>
     </div>
 
-    <button onclick="exportData()" class="w-full bg-gray-800 text-white py-3 rounded-xl font-semibold">导出健康档案</button>
+    <button onclick="exportData()" class="w-full bg-gray-800 text-white py-3 rounded-xl font-semibold mb-3">导出健康档案</button>
+    <button onclick="openSettings()" class="w-full border border-gray-300 text-gray-600 py-3 rounded-xl font-semibold">⚙️ 设置</button>
   </div>
 
   <!-- 底部导航栏 -->
@@ -488,6 +492,187 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
 
   <!-- Toast -->
   <div id="toast" class="fixed top-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-5 py-3 rounded-xl text-sm z-[300] opacity-0 pointer-events-none transition-opacity duration-300 shadow-lg"></div>
+
+  <!-- 免责声明模态框 -->
+  <div id="modal-disclaimer" class="modal-overlay" onclick="closeOnOverlay(event,'modal-disclaimer')">
+    <div class="modal-content max-h-[85vh] overflow-y-auto" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-bold text-gray-800">⚠️ 免责声明</h2>
+        <button onclick="closeModal('modal-disclaimer')" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">×</button>
+      </div>
+      <div class="space-y-4 text-sm text-gray-600">
+        <div class="bg-red-50 border border-red-100 rounded-lg p-4">
+          <p class="font-semibold text-red-600 mb-2">重要提示</p>
+          <p>本应用仅供参考，不能替代专业医疗诊断、治疗或建议。如有任何健康问题，请及时咨询专业医生。</p>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-700 mb-2">1. 非医疗器械声明</h3>
+          <p>本应用不是医疗器械，不提供医疗诊断、治疗或预防服务。所有内容仅供健康教育参考。</p>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-700 mb-2">2. 紧急情况处理</h3>
+          <p class="text-red-500 font-medium">如出现胸痛、呼吸困难、意识丧失、严重出血等紧急情况，请立即拨打120或前往最近的医院急诊科。</p>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-700 mb-2">3. 内容来源</h3>
+          <p>本应用内容基于公开医学资料和中医典籍整理，仅供参考学习。具体诊疗方案请以专业医生意见为准。</p>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-700 mb-2">4. 用药提醒</h3>
+          <p>任何药物调整、剂量变更都必须在医生指导下进行。请勿根据本应用内容自行调整用药方案。</p>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-700 mb-2">5. 数据安全</h3>
+          <p>您的健康数据仅存储在本地设备中，我们不会上传或收集您的个人健康信息。</p>
+        </div>
+        <div class="text-xs text-gray-400 pt-2 border-t">
+          最后更新：2025年1月 | 知体知医团队
+        </div>
+      </div>
+      <button onclick="closeModal('modal-disclaimer')" class="w-full mt-5 bg-primary text-white py-3 rounded-xl font-semibold">我已了解</button>
+    </div>
+  </div>
+
+  <!-- 隐私政策模态框 -->
+  <div id="modal-privacy" class="modal-overlay" onclick="closeOnOverlay(event,'modal-privacy')">
+    <div class="modal-content max-h-[85vh] overflow-y-auto" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-bold text-gray-800">🔒 隐私政策</h2>
+        <button onclick="closeModal('modal-privacy')" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">×</button>
+      </div>
+      <div class="space-y-4 text-sm text-gray-600">
+        <div>
+          <h3 class="font-semibold text-gray-700 mb-2">1. 数据收集范围</h3>
+          <p>我们收集以下信息用于提供个性化健康服务：</p>
+          <ul class="list-disc ml-5 mt-1 space-y-1">
+            <li>基本信息：昵称、年龄段、性别</li>
+            <li>健康信息：疾病史、过敏史、身体反馈记录</li>
+            <li>使用数据：打卡记录、学习计划完成情况</li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-700 mb-2">2. 数据存储方式</h3>
+          <p class="text-green-600 font-medium">✓ 所有数据仅存储在您的本地设备中</p>
+          <p class="mt-1">我们不会将您的健康数据上传到任何服务器，您的隐私完全由您自己掌控。</p>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-700 mb-2">3. 数据用途</h3>
+          <p>您的数据仅用于：</p>
+          <ul class="list-disc ml-5 mt-1 space-y-1">
+            <li>生成个性化健康建议</li>
+            <li>计算健康分数</li>
+            <li>提醒您按时打卡和学习</li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-700 mb-2">4. 您的权利</h3>
+          <p>您拥有以下权利：</p>
+          <ul class="list-disc ml-5 mt-1 space-y-1">
+            <li>随时查看、修改您的个人数据</li>
+            <li>导出您的健康档案</li>
+            <li>清除所有本地数据（在健康档案页面操作）</li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-700 mb-2">5. 第三方服务</h3>
+          <p>本应用使用Tailwind CSS CDN加载样式，该服务不会收集您的个人健康数据。</p>
+        </div>
+        <div class="text-xs text-gray-400 pt-2 border-t">
+          最后更新：2025年1月 | 知体知医团队
+        </div>
+      </div>
+      <button onclick="closeModal('modal-privacy')" class="w-full mt-5 bg-primary text-white py-3 rounded-xl font-semibold">我已了解</button>
+    </div>
+  </div>
+
+  <!-- 健康分详情模态框 -->
+  <div id="modal-score-detail" class="modal-overlay" onclick="closeOnOverlay(event,'modal-score-detail')">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-bold text-gray-800">📊 健康分构成</h2>
+        <button onclick="closeModal('modal-score-detail')" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">×</button>
+      </div>
+      <div id="score-detail-content" class="space-y-3">
+        <!-- 动态填充 -->
+      </div>
+      <div class="mt-4 pt-3 border-t text-xs text-gray-400">
+        <p>💡 点击各项了解如何提升分数</p>
+      </div>
+      <button onclick="closeModal('modal-score-detail')" class="w-full mt-4 bg-primary text-white py-3 rounded-xl font-semibold">知道了</button>
+    </div>
+  </div>
+
+  <!-- 设置模态框 -->
+  <div id="modal-settings" class="modal-overlay" onclick="closeOnOverlay(event,'modal-settings')">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="text-lg font-bold text-gray-800">⚙️ 设置</h2>
+        <button onclick="closeModal('modal-settings')" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">×</button>
+      </div>
+      
+      <!-- 字体大小 -->
+      <div class="mb-5">
+        <label class="text-sm font-medium text-gray-700 mb-2 block">字体大小</label>
+        <div class="flex gap-2">
+          <button onclick="setFontSize('normal')" id="font-normal" class="flex-1 py-2 rounded-lg border text-sm transition-colors">标准</button>
+          <button onclick="setFontSize('large')" id="font-large" class="flex-1 py-2 rounded-lg border text-sm transition-colors">大</button>
+          <button onclick="setFontSize('xlarge')" id="font-xlarge" class="flex-1 py-2 rounded-lg border text-sm transition-colors">超大</button>
+        </div>
+      </div>
+      
+      <!-- 打卡提醒 -->
+      <div class="mb-5">
+        <div class="flex items-center justify-between mb-2">
+          <label class="text-sm font-medium text-gray-700">每日打卡提醒</label>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="reminder-toggle" class="sr-only peer" onchange="toggleReminder()">
+            <div class="w-11 h-6 bg-gray-200 peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+          </label>
+        </div>
+        <select id="reminder-time" onchange="setReminderTime()" class="w-full p-2 border border-gray-200 rounded-lg text-sm">
+          <option value="08:00">早上 8:00</option>
+          <option value="09:00">早上 9:00</option>
+          <option value="12:00">中午 12:00</option>
+          <option value="18:00">晚上 18:00</option>
+          <option value="20:00">晚上 20:00</option>
+          <option value="21:00">晚上 21:00</option>
+        </select>
+        <p class="text-xs text-gray-400 mt-1">* 提醒功能需要浏览器支持</p>
+      </div>
+      
+      <!-- 链接 -->
+      <div class="space-y-2 pt-3 border-t">
+        <button onclick="openModal('modal-disclaimer'); closeModal('modal-settings');" class="w-full text-left py-2 text-sm text-gray-600 hover:text-primary flex items-center justify-between">
+          <span>⚠️ 免责声明</span>
+          <span class="text-gray-300">›</span>
+        </button>
+        <button onclick="openModal('modal-privacy'); closeModal('modal-settings');" class="w-full text-left py-2 text-sm text-gray-600 hover:text-primary flex items-center justify-between">
+          <span>🔒 隐私政策</span>
+          <span class="text-gray-300">›</span>
+        </button>
+      </div>
+      
+      <button onclick="closeModal('modal-settings')" class="w-full mt-5 bg-primary text-white py-3 rounded-xl font-semibold">完成</button>
+    </div>
+  </div>
+
+  <!-- 紧急提示模态框 -->
+  <div id="modal-emergency" class="modal-overlay" style="z-index: 400;">
+    <div class="modal-content border-2 border-red-500" onclick="event.stopPropagation()">
+      <div class="text-center mb-4">
+        <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
+          <span class="text-3xl">🚨</span>
+        </div>
+        <h2 class="text-xl font-bold text-red-600">紧急情况</h2>
+      </div>
+      <div class="bg-red-50 rounded-lg p-4 mb-4">
+        <p class="text-sm text-red-700 text-center font-medium">检测到您可能出现了紧急症状</p>
+        <p class="text-sm text-gray-600 text-center mt-2">请立即拨打急救电话或前往最近的医院</p>
+      </div>
+      <a href="tel:120" class="block w-full bg-red-500 text-white py-4 rounded-xl font-bold text-center text-lg mb-3">📞 立即拨打 120</a>
+      <button onclick="closeModal('modal-emergency')" class="w-full py-3 text-gray-500 text-sm">我已了解，继续记录</button>
+    </div>
+  </div>
 
 </div>
 
@@ -12781,6 +12966,19 @@ function removeFile(idx) { uploadedFiles.splice(idx, 1); renderFileList(); }
 function submitFeedback() {
   var text = document.getElementById('feedback-text').value.trim();
   if (!currentQuickTag && !text) { showToast('请至少选择一个快捷标签或输入内容'); return; }
+  
+  // 紧急症状检测
+  if (checkEmergencySymptoms(text)) {
+    openModal('modal-emergency');
+    // 仍然保存反馈，但中断后续流程让用户先处理紧急情况
+    var feedback = { id: Date.now(), tag: currentQuickTag || '未选择', text: text, files: uploadedFiles.slice(), timestamp: Date.now(), emergency: true };
+    var feedbacks = lsGet('feedbacks') || []; feedbacks.push(feedback); lsSet('feedbacks', feedbacks);
+    updateHealthScore(); renderFeedbackHistory();
+    currentQuickTag = ''; uploadedFiles = []; document.getElementById('feedback-text').value = ''; document.getElementById('file-list').innerHTML = '';
+    document.querySelectorAll('#modal-feedback .tag').forEach(function(t) { t.classList.remove('ring-2', 'ring-offset-1'); });
+    return;
+  }
+  
   var feedback = { id: Date.now(), tag: currentQuickTag || '未选择', text: text, files: uploadedFiles.slice(), timestamp: Date.now() };
   var feedbacks = lsGet('feedbacks') || []; feedbacks.push(feedback); lsSet('feedbacks', feedbacks);
 
@@ -14031,7 +14229,13 @@ function renderDiseaseAccordion() {
           '<div class="sub-card"><h4 class="text-xs font-semibold text-gray-500 mb-1">西医治疗</h4><p class="text-xs text-gray-600 leading-relaxed">' + data.treatment + '</p></div>' +
           '<div class="sub-card"><h4 class="text-xs font-semibold text-gray-500 mb-1">中医证型分类</h4><p class="text-xs text-gray-600 leading-relaxed">' + data.tcm + '</p></div>' +
           '<div class="border-t border-gray-100 pt-3">' +
-            '<h4 class="text-xs font-semibold text-gray-500 mb-2">生活建议</h4>' +
+            '<div class="flex items-center justify-between mb-2">' +
+              '<h4 class="text-xs font-semibold text-gray-500">生活建议</h4>' +
+              '<button onclick="shareDisease(\'' + name.replace(/'/g, "\\'") + '\')" class="text-xs bg-primary text-white px-3 py-1 rounded-full hover:bg-primary-dark transition-colors flex items-center gap-1">' +
+                '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>' +
+                '分享' +
+              '</button>' +
+            '</div>' +
             Object.entries(data.cards).map(function(entry) {
               var key = entry[0]; var card = entry[1];
               var dietHtml = '';
@@ -14109,6 +14313,75 @@ function toggleAccordion(btn) {
   const isOpen = body.classList.contains('open');
   document.querySelectorAll('.accordion-body.open').forEach(b => { b.classList.remove('open'); b.previousElementSibling.querySelector('.accordion-arrow').style.transform = ''; });
   if (!isOpen) { body.classList.add('open'); arrow.style.transform = 'rotate(180deg)'; }
+}
+
+// ========== 疾病分享功能 ==========
+function shareDisease(diseaseName) {
+  const data = DISEASE_DB[diseaseName];
+  if (!data) return;
+
+  // 构建分享文本
+  let shareText = `📋 ${diseaseName} 健康知识\n\n`;
+  shareText += `${data.icon} 发病原因\n${data.cause}\n\n`;
+  shareText += `🔬 发病机理\n${data.mechanism}\n\n`;
+  shareText += `📊 诊断标准\n${data.diagnosis}\n\n`;
+  shareText += `💊 治疗方案\n${data.treatment}\n\n`;
+  shareText += `🌿 中医证型\n${data.tcm}\n\n`;
+
+  // 添加生活建议摘要
+  shareText += `📚 生活建议\n`;
+  Object.entries(data.cards).forEach(([key, card]) => {
+    shareText += `• ${card.title}\n`;
+    if (card.content) shareText += `  ${card.content.substring(0, 50)}...\n`;
+  });
+
+  shareText += `\n━━━━━━━━━━━━━━\n`;
+  shareText += `🩺 知体知医 - 个性化健康管理\n`;
+  shareText += `🔗 https://weifeng1991525.github.io/ztzy-health-app/\n`;
+  shareText += `💡 关注健康，从了解开始`;
+
+  // 尝试使用原生分享
+  if (navigator.share) {
+    navigator.share({
+      title: `${diseaseName} - 健康知识`,
+      text: shareText,
+      url: 'https://weifeng1991525.github.io/ztzy-health-app/'
+    }).catch(() => {
+      // 用户取消或分享失败，复制到剪贴板
+      copyToClipboard(shareText);
+    });
+  } else {
+    // 复制到剪贴板
+    copyToClipboard(shareText);
+  }
+}
+
+function copyToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      showToast('分享内容已复制到剪贴板');
+    }).catch(() => {
+      fallbackCopy(text);
+    });
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text) {
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.select();
+  try {
+    document.execCommand('copy');
+    showToast('分享内容已复制到剪贴板');
+  } catch (err) {
+    showToast('复制失败，请手动复制');
+  }
+  document.body.removeChild(textarea);
 }
 
 // ========== 我的计划 ==========
@@ -14432,7 +14705,122 @@ function finishWelcome() {
 }
 
 // ========== ESC 关闭模态框 ==========
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { ['modal-feedback', 'modal-test', 'modal-disease-detail'].forEach(id => { if (document.getElementById(id).classList.contains('show')) closeModal(id); }); } });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { ['modal-feedback', 'modal-test', 'modal-disease-detail', 'modal-disclaimer', 'modal-privacy', 'modal-score-detail', 'modal-settings', 'modal-emergency'].forEach(id => { if (document.getElementById(id).classList.contains('show')) closeModal(id); }); } });
+
+// ========== 设置功能 ==========
+function openSettings() {
+  // 加载当前设置
+  const fontSize = lsGet('font_size') || 'normal';
+  updateFontSizeUI(fontSize);
+  
+  const reminderEnabled = lsGet('reminder_enabled') === 'true';
+  document.getElementById('reminder-toggle').checked = reminderEnabled;
+  
+  const reminderTime = lsGet('reminder_time') || '20:00';
+  document.getElementById('reminder-time').value = reminderTime;
+  
+  openModal('modal-settings');
+}
+
+function setFontSize(size) {
+  lsSet('font_size', size);
+  updateFontSizeUI(size);
+  applyFontSize(size);
+}
+
+function updateFontSizeUI(size) {
+  ['normal', 'large', 'xlarge'].forEach(s => {
+    const btn = document.getElementById('font-' + s);
+    if (btn) {
+      if (s === size) {
+        btn.classList.add('bg-primary', 'text-white', 'border-primary');
+        btn.classList.remove('bg-white', 'text-gray-700', 'border-gray-200');
+      } else {
+        btn.classList.remove('bg-primary', 'text-white', 'border-primary');
+        btn.classList.add('bg-white', 'text-gray-700', 'border-gray-200');
+      }
+    }
+  });
+}
+
+function applyFontSize(size) {
+  const html = document.documentElement;
+  html.classList.remove('text-base', 'text-lg', 'text-xl');
+  if (size === 'normal') html.classList.add('text-base');
+  else if (size === 'large') html.classList.add('text-lg');
+  else if (size === 'xlarge') html.classList.add('text-xl');
+}
+
+function toggleReminder() {
+  const enabled = document.getElementById('reminder-toggle').checked;
+  lsSet('reminder_enabled', enabled ? 'true' : 'false');
+  if (enabled) {
+    requestNotificationPermission();
+  }
+}
+
+function setReminderTime() {
+  const time = document.getElementById('reminder-time').value;
+  lsSet('reminder_time', time);
+}
+
+function requestNotificationPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+
+// ========== 健康分详情 ==========
+function showScoreDetail() {
+  const scores = lsGet('health_score_detail') || {};
+  const total = lsGet('health_score') || 75;
+  
+  const dimensions = [
+    { key: 'symptom', label: '症状反馈', weight: 30, icon: '🗣️', tip: '记录每日身体状况' },
+    { key: 'risk', label: '风险评估', weight: 25, icon: '🔍', tip: '完成自测项目' },
+    { key: 'completeness', label: '档案完整', weight: 15, icon: '📋', tip: '完善健康档案' },
+    { key: 'checkin', label: '打卡坚持', weight: 20, icon: '✅', tip: '每日打卡' },
+    { key: 'ai', label: 'AI评估', weight: 10, icon: '🤖', tip: '提交反馈获取评估' }
+  ];
+  
+  let html = '<div class="text-center mb-4">';
+  html += '<div class="text-4xl font-bold text-primary mb-1">' + total + '</div>';
+  html += '<div class="text-sm text-gray-500">当前健康分</div>';
+  html += '</div>';
+  
+  dimensions.forEach(d => {
+    const score = scores[d.key] || 70;
+    const barWidth = Math.round(score);
+    const contribution = Math.round(score * d.weight / 100);
+    
+    html += '<div class="bg-gray-50 rounded-lg p-3">';
+    html += '<div class="flex items-center justify-between mb-2">';
+    html += '<div class="flex items-center gap-2">';
+    html += '<span>' + d.icon + '</span>';
+    html += '<span class="text-sm font-medium text-gray-700">' + d.label + '</span>';
+    html += '<span class="text-xs text-gray-400">(' + d.weight + '%)</span>';
+    html += '</div>';
+    html += '<span class="text-sm font-bold text-primary">' + score + '分</span>';
+    html += '</div>';
+    html += '<div class="h-2 bg-gray-200 rounded-full overflow-hidden mb-2">';
+    html += '<div class="h-full bg-primary rounded-full transition-all" style="width:' + barWidth + '%"></div>';
+    html += '</div>';
+    html += '<p class="text-xs text-gray-400">💡 ' + d.tip + '</p>';
+    html += '</div>';
+  });
+  
+  document.getElementById('score-detail-content').innerHTML = html;
+  openModal('modal-score-detail');
+}
+
+// ========== 紧急症状检测 ==========
+const EMERGENCY_KEYWORDS = ['胸痛', '呼吸困难', '喘不上气', '窒息', '意识丧失', '昏迷', '大出血', '严重出血', '剧烈疼痛', '濒死感'];
+
+function checkEmergencySymptoms(text) {
+  if (!text) return false;
+  const lowerText = text.toLowerCase();
+  return EMERGENCY_KEYWORDS.some(keyword => lowerText.includes(keyword));
+}
 
 // ========== 应用初始化 ==========
 function initApp() {
