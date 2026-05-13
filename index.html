@@ -12823,7 +12823,7 @@ function autoAddDiseaseLearningCards(disease) {
     var card = cards[key];
     var planId = disease + '_' + key;
     if (!myPlan.find(function(p) { return p.id === planId; })) {
-      myPlan.push({ id: planId, disease: disease, cardKey: key, title: disease + ' - ' + card.title, addedAt: Date.now(), completed: false });
+      myPlan.push({ id: planId, disease: disease, cardKey: key, title: disease + ' - ' + card.title, content: card.content || (card.recommend ? '推荐：' + card.recommend.slice(0, 3).join('、') : ''), addedAt: Date.now(), completed: false });
       addedCount++;
     }
   });
@@ -14868,7 +14868,7 @@ function addToPlan(disease, cardKey, cardTitle) {
   const planId = `${disease}_${cardKey}`;
   const myPlan = lsGet('my_plan') || [];
   if (myPlan.find(p => p.id === planId)) { showToast('已在计划中'); return; }
-  myPlan.push({ id: planId, disease, cardKey, title: `${disease} - ${cardTitle}`, addedAt: Date.now(), completed: false });
+  myPlan.push({ id: planId, disease, cardKey, title: `${disease} - ${cardTitle}`, content: cardContent || '', addedAt: Date.now(), completed: false });
   lsSet('my_plan', myPlan);
   showToast('已加入我的计划');
 }
@@ -14895,17 +14895,44 @@ function renderMyPlan() {
   
   var listHtml = myPlan.map((p, i) => {
     const isCompleted = todayCompleted[today]?.includes(p.id);
-    return `<div class="bg-white rounded-xl p-4 border border-gray-100 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <button onclick="completePlan(${i})" class="w-6 h-6 rounded-full border-2 ${isCompleted ? 'bg-primary border-primary' : 'border-gray-300'} flex items-center justify-center transition-all">
+    // 获取内容详情
+    var diseaseData = DISEASE_DB[p.disease];
+    var cardData = diseaseData && diseaseData.cards ? diseaseData.cards[p.cardKey] : null;
+    var content = '';
+    var contentPreview = '';
+    
+    if (cardData) {
+      if (cardData.content) {
+        contentPreview = cardData.content.substring(0, 80) + (cardData.content.length > 80 ? '...' : '');
+      } else if (cardData.recommend && Array.isArray(cardData.recommend)) {
+        contentPreview = '✓ 推荐：' + cardData.recommend.slice(0, 3).join('、');
+      } else if (cardData.avoid && Array.isArray(cardData.avoid)) {
+        contentPreview = '✗ 避免：' + cardData.avoid.slice(0, 3).join('、');
+      }
+    }
+    
+    // 如果存储了content则优先使用
+    if (p.content) {
+      contentPreview = p.content.substring(0, 80) + (p.content.length > 80 ? '...' : '');
+    }
+    
+    var safeDisease = (p.disease || '').replace(/'/g, "\\'");
+    var safeCardKey = (p.cardKey || '').replace(/'/g, "\\'");
+    
+    return `<div class="bg-white rounded-xl border border-gray-100 overflow-hidden">
+      <div class="flex items-center p-4">
+        <button onclick="completePlan(${i})" class="w-6 h-6 rounded-full border-2 ${isCompleted ? 'bg-primary border-primary' : 'border-gray-300'} flex items-center justify-center transition-all flex-shrink-0 mr-3">
           ${isCompleted ? '<svg class="w-4 h-4 text-white pop-in" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
         </button>
-        <div>
-          <span class="text-sm font-semibold text-gray-700 ${isCompleted ? 'line-through text-gray-400' : ''}">${p.title}</span>
-          <p class="text-xs text-gray-400 mt-0.5">${formatDate(p.addedAt)} 加入</p>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">${diseaseData ? diseaseData.icon : '📌'}</span>
+            <span class="text-sm font-semibold text-gray-700 ${isCompleted ? 'line-through text-gray-400' : ''}">${p.title}</span>
+          </div>
+          ${contentPreview ? `<p class="text-xs text-gray-500 leading-relaxed ${isCompleted ? 'line-through' : ''}">${contentPreview}</p>` : ''}
         </div>
+        <button onclick="removePlan(${i})" class="text-red-400 hover:text-red-600 text-sm px-2 flex-shrink-0 ml-2">删除</button>
       </div>
-      <button onclick="removePlan(${i})" class="text-red-400 hover:text-red-600 text-sm px-2">删除</button>
     </div>`;
   }).join('');
   
@@ -14973,7 +15000,7 @@ function addLearningForDisease(disease) {
     var card = cards[key];
     var planId = disease + '_' + key;
     if (!myPlan.find(function(p) { return p.id === planId; })) {
-      myPlan.push({ id: planId, disease: disease, cardKey: key, title: disease + ' - ' + card.title, addedAt: Date.now(), completed: false });
+      myPlan.push({ id: planId, disease: disease, cardKey: key, title: disease + ' - ' + card.title, content: card.content || (card.recommend ? '推荐：' + card.recommend.slice(0, 3).join('、') : ''), addedAt: Date.now(), completed: false });
       addedCount++;
     }
   });
