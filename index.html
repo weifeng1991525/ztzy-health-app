@@ -14510,10 +14510,16 @@ function renderDiseaseAccordion() {
                 dietHtml = '<p class="text-xs text-gray-600 leading-relaxed whitespace-pre-line">' + exerciseContent + '</p>';
               }
               var safeTitle = (card.title || '').replace(/'/g, "\\'");
+              var myPlan = lsGet('my_plan') || [];
+              var planId = name + '_' + key;
+              var isInPlan = myPlan.some(function(p) { return p.id === planId; });
+              var btnHtml = isInPlan 
+                ? '<span class="text-xs bg-green-100 text-green-600 px-3 py-1 rounded-full">✓ 已加入</span>'
+                : '<button onclick="addToPlan(\'' + name + '\',\'' + key + '\',\'' + safeTitle + '\')" class="text-xs bg-primary text-white px-3 py-1 rounded-full hover:bg-primary-dark transition-colors">+ 加入计划</button>';
               return '<div class="sub-card">' +
                 '<div class="flex items-center justify-between mb-2">' +
                   '<div class="flex items-center gap-2"><span>' + card.icon + '</span><span class="text-sm font-semibold text-gray-700">' + card.title + '</span></div>' +
-                  '<button onclick="addToPlan(\'' + name + '\',\'' + key + '\',\'' + safeTitle + '\')" class="text-xs bg-primary text-white px-3 py-1 rounded-full hover:bg-primary-dark transition-colors">+ 加入计划</button>' +
+                  btnHtml +
                 '</div>' +
                 dietHtml +
               '</div>';
@@ -14877,7 +14883,6 @@ function renderMyPlan() {
   const container = document.getElementById('my-plan-list');
   const emptyEl = document.getElementById('plan-empty');
   
-  // 添加标题和添加按钮
   var headerHtml = '<div class="flex items-center justify-between mb-3">';
   headerHtml += '<span class="text-sm font-semibold text-gray-700">我的学习计划</span>';
   headerHtml += '<button onclick="showAddLearning()" class="text-xs bg-primary text-white px-3 py-1.5 rounded-lg">+ 添加学习</button>';
@@ -14893,50 +14898,100 @@ function renderMyPlan() {
   const today = getDateStr(Date.now());
   const todayCompleted = lsGet('today_completed') || {};
   
-  var listHtml = myPlan.map((p, i) => {
-    const isCompleted = todayCompleted[today]?.includes(p.id);
-    // 获取内容详情
-    var diseaseData = DISEASE_DB[p.disease];
-    var cardData = diseaseData && diseaseData.cards ? diseaseData.cards[p.cardKey] : null;
-    var content = '';
-    var contentPreview = '';
+  // 按疾病分组
+  var diseaseGroups = {};
+  myPlan.forEach(function(p, i) {
+    var disease = p.disease || '其他';
+    if (!diseaseGroups[disease]) diseaseGroups[disease] = [];
+    diseaseGroups[disease].push({ plan: p, index: i });
+  });
+  
+  var listHtml = '';
+  Object.keys(diseaseGroups).sort().forEach(function(diseaseName) {
+    var diseaseData = DISEASE_DB[diseaseName];
+    var group = diseaseGroups[diseaseName];
+    var completedCount = group.filter(function(g) {
+      return todayCompleted[today]?.includes(g.plan.id);
+    }).length;
     
-    if (cardData) {
-      if (cardData.content) {
-        contentPreview = cardData.content.substring(0, 80) + (cardData.content.length > 80 ? '...' : '');
-      } else if (cardData.recommend && Array.isArray(cardData.recommend)) {
-        contentPreview = '✓ 推荐：' + cardData.recommend.slice(0, 3).join('、');
-      } else if (cardData.avoid && Array.isArray(cardData.avoid)) {
-        contentPreview = '✗ 避免：' + cardData.avoid.slice(0, 3).join('、');
+    // 疾病分组头部
+    listHtml += '<div class="mb-4">';
+    listHtml += '<div class="flex items-center gap-2 mb-2">';
+    listHtml += '<span class="text-lg">' + (diseaseData ? diseaseData.icon : '📌') + '</span>';
+    listHtml += '<span class="text-sm font-semibold text-gray-700">' + diseaseName + '</span>';
+    listHtml += '<span class="text-xs text-gray-400">(' + completedCount + '/' + group.length + ')</span>';
+    listHtml += '</div>';
+    
+    group.forEach(function(g) {
+      var p = g.plan;
+      var i = g.index;
+      var isCompleted = todayCompleted[today]?.includes(p.id);
+      var cardData = diseaseData && diseaseData.cards ? diseaseData.cards[p.cardKey] : null;
+      
+      // 获取完整内容
+      var fullContent = '';
+      if (cardData) {
+        if (cardData.content) {
+          fullContent = cardData.content;
+        } else if (cardData.recommend && Array.isArray(cardData.recommend)) {
+          fullContent = '✓ 推荐：\n' + cardData.recommend.map(function(r) { return '  • ' + r; }).join('\n');
+        } else if (cardData.avoid && Array.isArray(cardData.avoid)) {
+          fullContent = '✗ 避免：\n' + cardData.avoid.map(function(a) { return '  • ' + a; }).join('\n');
+        }
+      } else if (p.content) {
+        fullContent = p.content;
       }
-    }
+      
+      // 获取图标
+      var cardIcon = cardData ? (cardData.icon || '📌') : '📌';
+      var safeId = p.id.replace(/'/g, "\\'");
+      
+      // 卡片内容
+      listHtml += '<div class="bg-white rounded-xl border border-gray-100 mb-2 overflow-hidden">';
+      // 头部：勾选+标题+展开
+      listHtml += '<div class="flex items-center p-3 gap-2">';
+      listHtml += '<button onclick="completePlan(' + i + ')" class="w-6 h-6 rounded-full border-2 ' + (isCompleted ? 'bg-primary border-primary' : 'border-gray-300') + ' flex items-center justify-center transition-all flex-shrink-0">';
+      if (isCompleted) {
+        listHtml += '<svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+      }
+      listHtml += '</button>';
+      listHtml += '<span class="text-base flex-shrink-0">' + cardIcon + '</span>';
+      listHtml += '<span class="text-sm font-medium text-gray-700 flex-1 ' + (isCompleted ? 'line-through text-gray-400' : '') + '">' + p.title + '</span>';
+      if (fullContent) {
+        listHtml += '<button onclick="togglePlanItem(this)" class="text-gray-400 hover:text-gray-600 p-1">';
+        listHtml += '<svg class="w-4 h-4 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>';
+        listHtml += '</button>';
+      }
+      listHtml += '<button onclick="removePlan(' + i + ')" class="text-red-400 hover:text-red-600 text-xs px-2 py-1 rounded-lg hover:bg-red-50 flex-shrink-0">删除</button>';
+      listHtml += '</div>';
+      
+      // 展开内容
+      if (fullContent) {
+        listHtml += '<div class="plan-item-content hidden px-4 pb-3">';
+        listHtml += '<div class="bg-gray-50 rounded-lg p-3 text-sm text-gray-600 leading-relaxed whitespace-pre-line ' + (isCompleted ? 'opacity-50' : '') + '">' + fullContent + '</div>';
+        listHtml += '</div>';
+      }
+      listHtml += '</div>';
+    });
     
-    // 如果存储了content则优先使用
-    if (p.content) {
-      contentPreview = p.content.substring(0, 80) + (p.content.length > 80 ? '...' : '');
-    }
-    
-    var safeDisease = (p.disease || '').replace(/'/g, "\\'");
-    var safeCardKey = (p.cardKey || '').replace(/'/g, "\\'");
-    
-    return `<div class="bg-white rounded-xl border border-gray-100 overflow-hidden">
-      <div class="flex items-center p-4">
-        <button onclick="completePlan(${i})" class="w-6 h-6 rounded-full border-2 ${isCompleted ? 'bg-primary border-primary' : 'border-gray-300'} flex items-center justify-center transition-all flex-shrink-0 mr-3">
-          ${isCompleted ? '<svg class="w-4 h-4 text-white pop-in" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
-        </button>
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-2 mb-1">
-            <span class="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">${diseaseData ? diseaseData.icon : '📌'}</span>
-            <span class="text-sm font-semibold text-gray-700 ${isCompleted ? 'line-through text-gray-400' : ''}">${p.title}</span>
-          </div>
-          ${contentPreview ? `<p class="text-xs text-gray-500 leading-relaxed ${isCompleted ? 'line-through' : ''}">${contentPreview}</p>` : ''}
-        </div>
-        <button onclick="removePlan(${i})" class="text-red-400 hover:text-red-600 text-sm px-2 flex-shrink-0 ml-2">删除</button>
-      </div>
-    </div>`;
-  }).join('');
+    listHtml += '</div>';
+  });
   
   container.innerHTML = headerHtml + listHtml;
+}
+
+// 展开/收起计划项
+function togglePlanItem(btn) {
+  var card = btn.closest('.bg-white');
+  var content = card.querySelector('.plan-item-content');
+  var arrow = btn.querySelector('svg');
+  if (content.classList.contains('hidden')) {
+    content.classList.remove('hidden');
+    arrow.style.transform = 'rotate(180deg)';
+  } else {
+    content.classList.add('hidden');
+    arrow.style.transform = 'rotate(0deg)';
+  }
 }
 
 // 显示添加学习界面
