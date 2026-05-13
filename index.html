@@ -184,8 +184,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
         <!-- 搜索框 -->
         <div class="relative mb-3">
           <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input id="disease-search-input" type="text" placeholder="输入疾病名称或关键词..." oninput="onDiseaseSearchInput(this.value)" class="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary" autocomplete="off" />
-          <div id="search-clear-btn" class="hidden absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 text-xs cursor-pointer" onclick="clearDiseaseSearch()">×</div>
+          <input id="disease-search-input" type="text" placeholder="输入疾病名称或关键词..." oninput="handleDiseaseSearchInput(this.value)" class="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary" autocomplete="off" />
+          <div id="search-clear-btn" class="hidden absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 text-xs cursor-pointer" onclick="handleDiseaseSearchClear()">×</div>
         </div>
         
         <!-- 科室分类标签 -->
@@ -13205,25 +13205,134 @@ function openTest() {
   openModal('modal-test');
 }
 
-// 添加疾病到测一下列表
+// 添加疾病到测一下列表 - 使用搜索模态框
 function showAddTestDisease() {
-  var allDiseases = Object.keys(QUESTIONNAIRE_DB).sort();
-  var testDiseases = lsGet('test_diseases') || [];
-  
-  var html = '<div class="mb-4"><h3 class="text-sm font-semibold text-gray-700">选择要添加的疾病</h3></div>';
-  html += '<div class="max-h-80 overflow-y-auto space-y-1">';
-  allDiseases.forEach(function(disease) {
-    var isAdded = testDiseases.includes(disease);
-    var safeDisease = disease.replace(/'/g, "\\'");
-    html += '<button onclick="addTestDisease(\'' + safeDisease + '\')" class="w-full text-left px-4 py-2 rounded-lg ' + (isAdded ? 'bg-green-50 text-green-600' : 'bg-gray-50 hover:bg-gray-100') + ' text-sm flex items-center justify-between">';
-    html += '<span>' + disease + '</span>';
-    if (isAdded) html += '<span>✓ 已添加</span>';
-    html += '</button>';
+  openDiseaseSearchForTest();
+}
+
+// 为测一下打开疾病搜索（复用学习页面的搜索模态框，但添加到test_diseases）
+var isAddingForTest = false;
+
+function openDiseaseSearchForTest() {
+  isAddingForTest = true;
+  openModal('modal-disease-search');
+  renderDeptTabsForTest();
+  renderDiseaseResultsForTest();
+  setTimeout(function() {
+    document.getElementById('disease-search-input').focus();
+  }, 300);
+}
+
+function renderDeptTabsForTest() {
+  var container = document.getElementById('dept-tabs');
+  var html = '';
+  Object.keys(DEPT_CATEGORIES).forEach(function(cat) {
+    var isActive = currentSearchDept === cat;
+    var cls = isActive ? 'bg-primary text-white border-primary' : 'bg-white text-gray-600 border-gray-200';
+    var count = '';
+    if (cat !== '全部') {
+      var depts = DEPT_CATEGORIES[cat];
+      var n = 0;
+      Object.entries(DISEASE_DB).forEach(function(entry) {
+        var d = entry[1];
+        if (depts.some(function(dep) { return (d.department || '').includes(dep); })) n++;
+      });
+      count = ' (' + n + ')';
+    }
+    html += '<button onclick="selectDeptForTest(\'' + cat + '\')" class="flex-shrink-0 px-3 py-1.5 rounded-full text-xs border transition-colors ' + cls + '">' + cat + count + '</button>';
   });
-  html += '</div>';
-  html += '<div class="mt-4"><button onclick="openTest()" class="w-full px-4 py-2 bg-primary text-white rounded-lg">完成</button></div>';
+  container.innerHTML = html;
+}
+
+function selectDeptForTest(dept) {
+  currentSearchDept = dept;
+  renderDeptTabsForTest();
+  renderDiseaseResultsForTest();
+}
+
+function onDiseaseSearchInputForTest(val) {
+  currentSearchKeyword = val.trim();
+  var clearBtn = document.getElementById('search-clear-btn');
+  if (val.trim()) clearBtn.classList.remove('hidden');
+  else clearBtn.classList.add('hidden');
+  renderDiseaseResultsForTest();
+}
+
+function clearDiseaseSearchForTest() {
+  document.getElementById('disease-search-input').value = '';
+  currentSearchKeyword = '';
+  document.getElementById('search-clear-btn').classList.add('hidden');
+  renderDiseaseResultsForTest();
+  document.getElementById('disease-search-input').focus();
+}
+
+function renderDiseaseResultsForTest() {
+  var container = document.getElementById('disease-search-results');
+  var testDiseases = lsGet('test_diseases') || [];
+  var keyword = currentSearchKeyword.toLowerCase();
+  var deptFilter = DEPT_CATEGORIES[currentSearchDept];
   
-  document.getElementById('test-content').innerHTML = html;
+  var results = [];
+  Object.entries(DISEASE_DB).forEach(function(entry) {
+    var name = entry[0];
+    var data = entry[1];
+    
+    // 科室过滤
+    if (deptFilter) {
+      var dept = data.department || '';
+      var match = deptFilter.some(function(d) { return dept.includes(d); });
+      if (!match) return;
+    }
+    
+    // 关键词过滤
+    if (keyword) {
+      var searchStr = (name + ' ' + (data.cause || '') + ' ' + (data.mechanism || '') + ' ' + (data.treatment || '') + ' ' + (data.tcm || '') + ' ' + (data.department || '')).toLowerCase();
+      if (searchStr.indexOf(keyword) === -1) return;
+    }
+    
+    var isAdded = testDiseases.indexOf(name) >= 0;
+    results.push({ name: name, data: data, isAdded: isAdded });
+  });
+  
+  if (results.length === 0) {
+    container.innerHTML = '<div class="text-center py-8"><p class="text-gray-400 text-sm">未找到匹配的疾病</p><p class="text-gray-300 text-xs mt-1">试试其他关键词或切换科室</p></div>';
+    return;
+  }
+  
+  // 限制显示数量
+  var display = results.slice(0, 50);
+  var html = '<div class="text-xs text-gray-400 mb-2">共找到 ' + results.length + ' 个结果' + (results.length > 50 ? '（显示前50个）' : '') + '</div>';
+  
+  display.forEach(function(item) {
+    var addedClass = item.isAdded ? 'bg-green-50 border-green-200' : 'bg-white border-gray-100';
+    var btnText = item.isAdded ? '<span class="text-xs text-green-600">✓ 已添加</span>' : '<span class="text-xs text-primary font-medium">+ 添加</span>';
+    var btnAction = item.isAdded ? '' : 'onclick="addTestDiseaseFromSearch(\'' + item.name.replace(/'/g, "\\'") + '\')"';
+    
+    html += '<div class="flex items-center gap-3 p-3 rounded-xl border ' + addedClass + ' transition-colors">';
+    html += '<span class="text-xl">' + item.data.icon + '</span>';
+    html += '<div class="flex-1 min-w-0">';
+    html += '<div class="text-sm font-medium text-gray-800 truncate">' + item.name + '</div>';
+    html += '<div class="text-xs text-gray-400 truncate">' + (item.data.department || '') + '</div>';
+    html += '</div>';
+    html += '<button ' + btnAction + ' class="flex-shrink-0 px-3 py-1.5 rounded-lg transition-colors">' + btnText + '</button>';
+    html += '</div>';
+  });
+  
+  container.innerHTML = html;
+}
+
+function addTestDiseaseFromSearch(diseaseName) {
+  var testDiseases = lsGet('test_diseases') || [];
+  if (testDiseases.indexOf(diseaseName) >= 0) {
+    showToast('该疾病已在列表中');
+    return;
+  }
+  testDiseases.push(diseaseName);
+  lsSet('test_diseases', testDiseases);
+  showToast('已添加「' + diseaseName + '」到测一下列表');
+  renderDiseaseResultsForTest();
+  // 同时刷新测一下页面
+  openTest();
 }
 
 function addTestDisease(disease) {
@@ -14410,6 +14519,7 @@ var currentSearchDept = '全部';
 var currentSearchKeyword = '';
 
 function openDiseaseSearch() {
+  isAddingForTest = false;
   openModal('modal-disease-search');
   renderDeptTabs();
   renderDiseaseResults();
@@ -14458,6 +14568,23 @@ function clearDiseaseSearch() {
   document.getElementById('search-clear-btn').classList.add('hidden');
   renderDiseaseResults();
   document.getElementById('disease-search-input').focus();
+}
+
+// 统一的事件处理函数（根据isAddingForTest标志决定调用哪个版本）
+function handleDiseaseSearchInput(val) {
+  if (isAddingForTest) {
+    onDiseaseSearchInputForTest(val);
+  } else {
+    onDiseaseSearchInput(val);
+  }
+}
+
+function handleDiseaseSearchClear() {
+  if (isAddingForTest) {
+    clearDiseaseSearchForTest();
+  } else {
+    clearDiseaseSearch();
+  }
 }
 
 function renderDiseaseResults() {
