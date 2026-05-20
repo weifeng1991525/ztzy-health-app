@@ -13250,12 +13250,20 @@ var isAddingForTest = false;
 
 function openDiseaseSearchForTest() {
   isAddingForTest = true;
-  openModal('modal-disease-search');
-  renderDeptTabsForTest();
-  renderDiseaseResultsForTest();
+  // 先关闭测一下模态框，避免层级冲突
+  closeModal('modal-test');
   setTimeout(function() {
-    document.getElementById('disease-search-input').focus();
-  }, 300);
+    openModal('modal-disease-search');
+    renderDeptTabsForTest();
+    renderDiseaseResultsForTest();
+    document.getElementById('disease-search-input').value = '';
+    currentSearchKeyword = '';
+    document.getElementById('search-clear-btn').classList.add('hidden');
+    currentSearchDept = '全部';
+    setTimeout(function() {
+      document.getElementById('disease-search-input').focus();
+    }, 300);
+  }, 250);
 }
 
 function renderDeptTabsForTest() {
@@ -14849,8 +14857,9 @@ function generateShareCard(diseaseName, data) {
       <!-- 底部信息 -->
       <div style="border-top: 1px dashed #D1D5DB; padding-top: 12px; text-align: center;">
         <p style="font-size: 13px; font-weight: 600; color: #3ABFA8; margin: 0 0 4px 0;">🩺 知体知医</p>
-        <p style="font-size: 11px; color: #6B7280; margin: 0 0 2px 0;">个性化健康管理</p>
-        <p style="font-size: 10px; color: #9CA3AF; margin: 0;">https://weifeng1991525.github.io/ztzy-health-app/</p>
+        <p style="font-size: 11px; color: #6B7280; margin: 0 0 8px 0;">个性化健康管理</p>
+        <img src="qrcode.png" style="width: 80px; height: 80px; margin: 0 auto 6px auto; display: block; border-radius: 8px;" />
+        <p style="font-size: 10px; color: #9CA3AF; margin: 0;">扫码访问 med.anernor.com</p>
       </div>
     </div>
   `;
@@ -14880,11 +14889,25 @@ function generateShareCard(diseaseName, data) {
 function downloadShareImage() {
   if (!currentShareImageData) return;
   
-  const link = document.createElement('a');
-  link.download = '知体知医_' + currentShareDiseaseName + '_健康知识.png';
-  link.href = currentShareImageData;
-  link.click();
+  // 将base64转换为blob，解决手机浏览器无法下载data URL的问题
+  var byteString = atob(currentShareImageData.split(',')[1]);
+  var mimeString = currentShareImageData.split(',')[0].split(':')[1].split(';')[0];
+  var ab = new ArrayBuffer(byteString.length);
+  var ia = new Uint8Array(ab);
+  for (var i = 0; i < byteString.length; i++) {
+    ia[i] = byteString.charCodeAt(i);
+  }
+  var blob = new Blob([ab], { type: mimeString });
+  var blobUrl = URL.createObjectURL(blob);
   
+  var link = document.createElement('a');
+  link.download = '知体知医_' + currentShareDiseaseName + '_健康知识.png';
+  link.href = blobUrl;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  setTimeout(function() { URL.revokeObjectURL(blobUrl); }, 1000);
   showToast('图片已保存');
 }
 
